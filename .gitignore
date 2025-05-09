@@ -1,3 +1,13 @@
-node_modules
-dist
+# Environment
 .env
+*.sql
+
+# Node
+node_modules
+
+# Build
+dist
+
+# Drizzle
+drizzle/meta/
+drizzle/migrations/*.lock
