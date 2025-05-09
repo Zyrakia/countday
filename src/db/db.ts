@@ -1,5 +1,6 @@
-import Database from 'better-sqlite3';
-import { drizzle } from 'drizzle-orm/better-sqlite3';
+import Database from 'bun:sqlite';
+import { drizzle } from 'drizzle-orm/bun-sqlite';
 import { env } from '../env';
+import * as schema from './schema';
 
-export const db = drizzle(new Database(env.DB_FILENAME), { casing: 'snake_case' });
+export const db = drizzle(new Database(env.DB_FILENAME), { casing: 'snake_case', schema });

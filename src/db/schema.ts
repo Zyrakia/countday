@@ -30,9 +30,7 @@ export const categoryTable = sqliteTable('category', {
 export const itemTable = sqliteTable('item', {
 	id: randomIdColumn(),
 	name: text().notNull(),
-	categoryId: text()
-		.references(() => categoryTable.id)
-		.notNull(),
+	categoryId: text().references(() => categoryTable.id),
 	uom: text().notNull(),
 	description: text(),
 	imageUrl: text(),

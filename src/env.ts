@@ -9,6 +9,7 @@ const env = createEnv({
 	server: {
 		SERVICE_NAME: z.string(),
 		DB_FILENAME: z.string(),
+		PORT: z.coerce.number().default(3000),
 	},
 });
 

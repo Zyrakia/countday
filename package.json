@@ -4,15 +4,14 @@
 	"version": "0.0.1",
 	"type": "module",
 	"scripts": {
-		"dev": "bun run src/server.ts",
-		"build": "bun build src/server.ts --outfile=dist/server.js",
-		"start": "bun run dist/server.js"
+		"dev": "bun run --watch ./src/index.ts",
+		"build": "bun build ./src/index.ts --outfile=dist/index.js --target=bun",
+		"start": "bun run ./dist/index.js"
 	},
 	"dependencies": {
 		"@t3-oss/env-core": "^0.12.0",
 		"@trpc/client": "^11.1.2",
 		"@trpc/server": "^11.1.2",
-		"better-sqlite3": "^11.9.1",
 		"dotenv": "^16.5.0",
 		"drizzle-orm": "^0.41.0",
 		"drizzle-zod": "^0.7.1",
@@ -21,8 +20,10 @@
 		"zod": "^3.24.2"
 	},
 	"devDependencies": {
-		"@types/better-sqlite3": "^7.6.13",
+		"@libsql/client": "^0.15.4",
+		"@types/bun": "^1.2.12",
 		"drizzle-kit": "^0.30.6",
 		"typescript": "^5.0.0"
-	}
+	},
+	"module": "src/index.ts"
 }
