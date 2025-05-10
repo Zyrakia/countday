@@ -30,27 +30,30 @@ export const categoryTable = sqliteTable('category', {
 export const itemTable = sqliteTable('item', {
 	id: randomIdColumn(),
 	name: text().notNull(),
-	categoryId: text().references(() => categoryTable.id),
+	categoryId: text().references(() => categoryTable.id, { onDelete: 'set null' }),
 	uom: text().notNull(),
 	description: text(),
 	imageUrl: text(),
 	targetSalePrice: real(),
 	targetMarginPercent: real(),
 	targetMarginAmount: real(),
-	defaultSupplierId: text().references(() => supplierTable.id),
-	defaultLocationId: text().references(() => locationTable.id),
+	defaultSupplierId: text().references(() => supplierTable.id, { onDelete: 'set null' }),
+	defaultLocationId: text().references(() => locationTable.id, { onDelete: 'set null' }),
 });
+
+const batchStatusValues = ['active', 'archived', 'expired'] as const;
+const batchStatusSchema = z.enum(batchStatusValues);
 
 export const batchTable = sqliteTable('batch', {
 	id: randomIdColumn(),
 	itemId: text()
-		.references(() => itemTable.id)
+		.references(() => itemTable.id, { onDelete: 'cascade' })
 		.notNull(),
 	qty: integer().notNull(),
 	unitBuyPrice: real(),
-	status: text().default('active').notNull(),
-	locationId: text().references(() => locationTable.id),
-	supplierId: text().references(() => supplierTable.id),
+	status: text('status', { enum: batchStatusValues }).default('active').notNull(),
+	locationId: text().references(() => locationTable.id, { onDelete: 'set null' }),
+	supplierId: text().references(() => supplierTable.id, { onDelete: 'set null' }),
 	receivedDate: text().notNull(),
 	expiryDate: text(),
 });
@@ -64,8 +67,8 @@ export const countTable = sqliteTable('count', {
 export const batchCountTable = sqliteTable(
 	'batch_count',
 	{
-		countId: text().references(() => countTable.id),
-		itemId: text().references(() => itemTable.id),
+		countId: text().references(() => countTable.id, { onDelete: 'cascade' }),
+		itemId: text().references(() => itemTable.id, { onDelete: 'cascade' }),
 		countedQty: integer().notNull(),
 		expectedQty: integer().notNull(),
 		countedDate: text().notNull(),
@@ -74,8 +77,8 @@ export const batchCountTable = sqliteTable(
 );
 
 export const countDriftTable = sqliteTable('count_drift', {
-	countId: text().references(() => countTable.id),
-	itemId: text().references(() => itemTable.id),
+	countId: text().references(() => countTable.id, { onDelete: 'cascade' }),
+	itemId: text().references(() => itemTable.id, { onDelete: 'cascade' }),
 	qty: integer().notNull(),
 	driftDate: text().notNull(),
 });
@@ -94,15 +97,14 @@ export const selectItemSchema = createSelectSchema(itemTable);
 export const insertItemSchema = createInsertSchema(itemTable).omit({ id: true });
 export const updateItemSchema = createUpdateSchema(itemTable).omit({ id: true });
 
-const batchStatusEnum = z.enum(['active', 'expired', 'archived']);
 export const selectBatchSchema = createSelectSchema(batchTable);
 export const insertBatchSchema = createInsertSchema(batchTable, {
-	status: batchStatusEnum,
+	status: batchStatusSchema,
 	receivedDate: datetimeRefinement,
 	expiryDate: datetimeRefinement,
 }).omit({ id: true });
 export const updateBatchSchema = createUpdateSchema(batchTable, {
-	status: batchStatusEnum,
+	status: batchStatusSchema,
 	receivedDate: datetimeRefinement,
 	expiryDate: datetimeRefinement,
 }).omit({ id: true });
@@ -125,4 +127,6 @@ export const updateBatchCountSchema = createUpdateSchema(batchCountTable, {}).om
 	countedDate: true,
 });
 
-export const selectCountDriftSchema = createSelectSchema(countDriftTable, { driftDate: datetimeRefinement });
+export const selectCountDriftSchema = createSelectSchema(countDriftTable, {
+	driftDate: datetimeRefinement,
+});

@@ -3,4 +3,7 @@ import { drizzle } from 'drizzle-orm/bun-sqlite';
 import { env } from '../env';
 import * as schema from './schema';
 
-export const db = drizzle(new Database(env.DB_FILENAME), { casing: 'snake_case', schema });
+const sqlite = new Database(env.DB_FILENAME);
+sqlite.exec('PRAGMA foreign_keys = ON');
+
+export const db = drizzle(sqlite, { casing: 'snake_case', schema });
