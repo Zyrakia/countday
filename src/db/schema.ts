@@ -28,7 +28,7 @@ export const categoryTable = sqliteTable('category', {
 });
 
 export const itemTable = sqliteTable('item', {
-	id: randomIdColumn(),
+	id: text().primaryKey(),
 	name: text().notNull(),
 	categoryId: text().references(() => categoryTable.id, { onDelete: 'set null' }),
 	uom: text().notNull(),
@@ -94,7 +94,7 @@ export const insertLocationSchema = createInsertSchema(locationTable).omit({ id:
 export const updateLocationSchema = createUpdateSchema(locationTable).omit({ id: true });
 
 export const selectItemSchema = createSelectSchema(itemTable);
-export const insertItemSchema = createInsertSchema(itemTable).omit({ id: true });
+export const insertItemSchema = createInsertSchema(itemTable);
 export const updateItemSchema = createUpdateSchema(itemTable).omit({ id: true });
 
 export const selectBatchSchema = createSelectSchema(batchTable);
