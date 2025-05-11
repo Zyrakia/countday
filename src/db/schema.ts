@@ -76,13 +76,6 @@ export const batchCountTable = sqliteTable(
 	(table) => [primaryKey({ columns: [table.countId, table.itemId] })],
 );
 
-export const countDriftTable = sqliteTable('count_drift', {
-	countId: text().references(() => countTable.id, { onDelete: 'cascade' }),
-	itemId: text().references(() => itemTable.id, { onDelete: 'cascade' }),
-	qty: integer().notNull(),
-	driftDate: text().notNull(),
-});
-
 const datetimeRefinement = (v: z.ZodString) => v.datetime();
 
 export const selectSupplierSchema = createSelectSchema(supplierTable);
@@ -125,8 +118,4 @@ export const updateBatchCountSchema = createUpdateSchema(batchCountTable, {}).om
 	countId: true,
 	expectedQty: true,
 	countedDate: true,
-});
-
-export const selectCountDriftSchema = createSelectSchema(countDriftTable, {
-	driftDate: datetimeRefinement,
 });
