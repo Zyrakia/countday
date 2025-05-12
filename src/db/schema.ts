@@ -1,4 +1,4 @@
-import { sqliteTable, text, real, integer, primaryKey } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, real, primaryKey, integer } from 'drizzle-orm/sqlite-core';
 import { v4 as uuid } from 'uuid';
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 import { z } from 'zod';
@@ -34,14 +34,16 @@ export const itemTable = sqliteTable('item', {
 	uom: text().notNull(),
 	description: text(),
 	imageUrl: text(),
+	warningQty: real(),
 	targetSalePrice: real(),
-	targetMarginPercent: real(),
-	targetMarginAmount: real(),
+	targetMarginIsPercent: integer({ mode: 'boolean' }).notNull().default(true),
+	targetMargin: real(),
 	defaultSupplierId: text().references(() => supplierTable.id, { onDelete: 'set null' }),
 	defaultLocationId: text().references(() => locationTable.id, { onDelete: 'set null' }),
 });
 
 const batchStatusValues = ['active', 'archived', 'expired'] as const;
+export type BatchStatus = (typeof batchStatusValues)[number];
 const batchStatusSchema = z.enum(batchStatusValues);
 
 export const batchTable = sqliteTable('batch', {
@@ -49,7 +51,7 @@ export const batchTable = sqliteTable('batch', {
 	itemId: text()
 		.references(() => itemTable.id, { onDelete: 'cascade' })
 		.notNull(),
-	qty: integer().notNull(),
+	qty: real().notNull(),
 	unitBuyPrice: real(),
 	status: text('status', { enum: batchStatusValues }).default('active').notNull(),
 	locationId: text().references(() => locationTable.id, { onDelete: 'set null' }),
@@ -69,8 +71,8 @@ export const batchCountTable = sqliteTable(
 	{
 		countId: text().references(() => countTable.id, { onDelete: 'cascade' }),
 		itemId: text().references(() => itemTable.id, { onDelete: 'cascade' }),
-		countedQty: integer().notNull(),
-		expectedQty: integer().notNull(),
+		countedQty: real().notNull(),
+		expectedQty: real().notNull(),
 		countedDate: text().notNull(),
 	},
 	(table) => [primaryKey({ columns: [table.countId, table.itemId] })],
