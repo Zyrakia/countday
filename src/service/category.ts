@@ -93,7 +93,7 @@ export namespace CategoryService {
 	 * @param limit the maximum amount of rows to get
 	 * @param offset the amount of rows to skip, default `0`
 	 * @param orderBy the key to order by, defaults to `'name'`
-	 * @param orderDir the direction in which the `orderBy` should be applied, default `'ascending'`
+	 * @param orderDir the direction in which the `orderBy` should be applied, default `'asc'`
 	 * @param where a where statement to include in the query
 	 */
 	export async function get(
@@ -118,7 +118,7 @@ export namespace CategoryService {
 	 * @param limit the maximum amount of rows to get
 	 * @param offset the amount of rows to skip, default `0`
 	 * @param orderBy the key to order by, defaults to `'name'`
-	 * @param orderDir the direction in which the `orderBy` should be applied, default `'ascending'`
+	 * @param orderDir the direction in which the `orderBy` should be applied, default `'asc'`
 	 */
 	export async function findByName(
 		query: string,

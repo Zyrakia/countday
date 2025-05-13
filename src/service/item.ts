@@ -121,8 +121,8 @@ export namespace ItemService {
 	 *
 	 * @param limit the maximum amount of rows to get
 	 * @param offset the amount of rows to skip, default `0`
-	 * @param orderBy the key to order by, defaults to `''`
-	 * @param orderDir the direction in which the `orderBy` should be applied, default `'ascending'`
+	 * @param orderBy the key to order by, defaults to `'totalQty'`
+	 * @param orderDir the direction in which the `orderBy` should be applied, default `'asc'`
 	 * @param quantityType the type of quantity to include in the result, default `'active'`
 	 * @param where a where statement to include in the query
 	 */
@@ -164,7 +164,7 @@ export namespace ItemService {
 	 * @param limit the maximum amount of items to get
 	 * @param offset the amount of items to skip, default `0`
 	 * @param orderBy the key to order by, defaults to `'totalQty'`
-	 * @param orderDir the direction in which the `orderBy` should be applied, default `'ascending'`
+	 * @param orderDir the direction in which the `orderBy` should be applied, default `'asc'`
 	 * @param quantityType the type of quantity to include in the result, default `'active'`
 	 * @return an array of items matching the query input
 	 */
