@@ -126,4 +126,5 @@ export type Supplier = z.infer<typeof selectSupplierSchema>;
 export type Location = z.infer<typeof selectLocationSchema>;
 export type Item = z.infer<typeof selectItemSchema>;
 export type Batch = z.infer<typeof selectBatchSchema>;
+export type Count = z.infer<typeof selectCountSchema>;
 export type BatchCount = z.infer<typeof selectBatchCountSchema>;
