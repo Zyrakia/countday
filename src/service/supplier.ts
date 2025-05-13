@@ -94,60 +94,19 @@ export namespace SupplierService {
 	}
 
 	/**
-	 * Obtains suppliers in bulk, with pagination support.
+	 * Obtains all suppliers.
 	 *
-	 * @param limit the maximum amount of rows to get
-	 * @param offset the amount of rows to skip, default `0`
 	 * @param orderBy the key to order by, defaults to `'name'`
 	 * @param orderDir the direction in which the `orderBy` should be applied, default `'asc'`
 	 * @param where a where statement to include in the query
 	 */
 	export async function get(
-		limit: number,
-		offset = 0,
 		orderBy: keyof Supplier = 'name',
 		orderDir: 'asc' | 'desc' = 'asc',
 		where?: SQL<unknown>,
 	) {
 		const orderCol = supplierTable[orderBy];
 		const orderByValue = orderDir === 'asc' ? asc(orderCol) : desc(orderCol);
-
-		return await db
-			.select()
-			.from(supplierTable)
-			.orderBy(orderByValue)
-			.where(where)
-			.limit(limit)
-			.offset(offset);
-	}
-
-	/**
-	 * Searches for suppliers by name of supplier or contact.
-	 *
-	 * @param query the search query, i.e. partial or complete supplier name
-	 * @param limit the maximum amount of rows to get
-	 * @param offset the amount of rows to skip, default `0`
-	 * @param orderBy the key to order by, defaults to `'name'`
-	 * @param orderDir the direction in which the `orderBy` should be applied, default `'asc'`
-	 */
-	export async function findByName(
-		query: string,
-		limit: number,
-		offset?: number,
-		orderBy?: keyof Supplier,
-		orderDir?: 'asc' | 'desc',
-	) {
-		const queryPattern = `%${query.toLowerCase()}%`;
-
-		return await get(
-			limit,
-			offset,
-			orderBy,
-			orderDir,
-			or(
-				like(sql`LOWER(${supplierTable.name})`, queryPattern),
-				like(sql`LOWER(${supplierTable.contactName})`, queryPattern),
-			),
-		);
+		return await db.select().from(supplierTable).orderBy(orderByValue).where(where);
 	}
 }
