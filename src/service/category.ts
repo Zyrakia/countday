@@ -106,9 +106,13 @@ export namespace CategoryService {
 		const orderCol = categoryTable[orderBy];
 		const orderByValue = orderDir === 'asc' ? asc(orderCol) : desc(orderCol);
 
-		const q = db.select().from(categoryTable).orderBy(orderByValue).limit(limit).offset(offset);
-		if (where) return await q.where(where);
-		else return await q;
+		return await db
+			.select()
+			.from(categoryTable)
+			.orderBy(orderByValue)
+			.where(where)
+			.limit(limit)
+			.offset(offset);
 	}
 
 	/**

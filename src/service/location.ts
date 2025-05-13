@@ -112,9 +112,13 @@ export namespace LocationService {
 		const orderCol = locationTable[orderBy];
 		const orderByValue = orderDir === 'asc' ? asc(orderCol) : desc(orderCol);
 
-		const q = db.select().from(locationTable).orderBy(orderByValue).limit(limit).offset(offset);
-		if (where) return await q.where(where);
-		else return await q;
+		const q = db
+			.select()
+			.from(locationTable)
+			.orderBy(orderByValue)
+			.where(where)
+			.limit(limit)
+			.offset(offset);
 	}
 
 	/**

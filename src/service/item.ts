@@ -138,7 +138,7 @@ export namespace ItemService {
 		const orderCol = orderBy === 'totalQty' ? totalQtyCol : itemTable[orderBy];
 		const orderByValue = orderDir === 'asc' ? asc(orderCol) : desc(orderCol);
 
-		const q = db
+		const res = await db
 			.select({ ...getTableColumns(itemTable), totalQty: totalQtyCol })
 			.from(itemTable)
 			.leftJoin(
@@ -147,12 +147,9 @@ export namespace ItemService {
 			)
 			.groupBy(itemTable.id)
 			.orderBy(orderByValue)
+			.where(where)
 			.limit(limit)
 			.offset(offset);
-
-		let res;
-		if (where) res = await q.where(where);
-		else res = await q;
 
 		return res.map((v) => ({ ...v, totalQty: asNumber(v.totalQty, 0) }));
 	}
