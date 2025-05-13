@@ -30,8 +30,8 @@ export const categoryTable = sqliteTable('category', {
 export const itemTable = sqliteTable('item', {
 	id: text().primaryKey(),
 	name: text().notNull(),
-	categoryId: text().references(() => categoryTable.id, { onDelete: 'set null' }),
 	uom: text().notNull(),
+	categoryId: text().references(() => categoryTable.id, { onDelete: 'set null' }),
 	description: text(),
 	imageUrl: text(),
 	warningQty: real(),
@@ -88,6 +88,10 @@ export const selectLocationSchema = createSelectSchema(locationTable);
 export const insertLocationSchema = createInsertSchema(locationTable).omit({ id: true });
 export const updateLocationSchema = createUpdateSchema(locationTable).omit({ id: true });
 
+export const selectCategorySchema = createSelectSchema(categoryTable);
+export const insertCategorySchema = createInsertSchema(categoryTable).omit({ id: true });
+export const updateCategorySchema = createUpdateSchema(categoryTable).omit({ id: true });
+
 export const selectItemSchema = createSelectSchema(itemTable);
 export const insertItemSchema = createInsertSchema(itemTable);
 export const updateItemSchema = createUpdateSchema(itemTable).omit({ id: true });
@@ -124,6 +128,7 @@ export const updateBatchCountSchema = createUpdateSchema(batchCountTable, {}).om
 
 export type Supplier = z.infer<typeof selectSupplierSchema>;
 export type Location = z.infer<typeof selectLocationSchema>;
+export type Category = z.infer<typeof selectCategorySchema>;
 export type Item = z.infer<typeof selectItemSchema>;
 export type Batch = z.infer<typeof selectBatchSchema>;
 export type Count = z.infer<typeof selectCountSchema>;
