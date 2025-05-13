@@ -63,7 +63,7 @@ export const batchTable = sqliteTable('batch', {
 export const countTable = sqliteTable('count', {
 	id: randomIdColumn(),
 	startedDate: text().notNull(),
-	finishedDate: text().notNull(),
+	finishedDate: text(),
 });
 
 export const batchCountTable = sqliteTable(
@@ -78,7 +78,8 @@ export const batchCountTable = sqliteTable(
 	(table) => [primaryKey({ columns: [table.countId, table.itemId] })],
 );
 
-const datetimeRefinement = (v: z.ZodString) => v.datetime();
+const dtRefinement = (v: z.ZodString) => v.datetime();
+const optionalDtRefinement = (v: z.ZodString) => dtRefinement(v).optional();
 
 export const selectSupplierSchema = createSelectSchema(supplierTable);
 export const insertSupplierSchema = createInsertSchema(supplierTable).omit({ id: true });
@@ -98,20 +99,18 @@ export const updateItemSchema = createUpdateSchema(itemTable).omit({ id: true })
 
 export const selectBatchSchema = createSelectSchema(batchTable);
 export const insertBatchSchema = createInsertSchema(batchTable, {
-	status: batchStatusSchema,
-	receivedDate: datetimeRefinement,
-	expiryDate: datetimeRefinement,
+	receivedDate: optionalDtRefinement,
+	expiryDate: optionalDtRefinement,
 }).omit({ id: true });
 export const updateBatchSchema = createUpdateSchema(batchTable, {
-	status: batchStatusSchema,
-	receivedDate: datetimeRefinement,
-	expiryDate: datetimeRefinement,
-}).omit({ id: true });
+	receivedDate: optionalDtRefinement,
+	expiryDate: optionalDtRefinement,
+}).omit({ id: true, itemId: true });
 
 export const selectCountSchema = createSelectSchema(countTable);
 export const insertCountSchema = createInsertSchema(countTable, {
-	startedDate: datetimeRefinement,
-	finishedDate: datetimeRefinement,
+	startedDate: dtRefinement,
+	finishedDate: optionalDtRefinement,
 }).omit({ id: true });
 
 export const selectBatchCountSchema = createSelectSchema(batchCountTable);
