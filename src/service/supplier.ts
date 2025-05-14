@@ -9,6 +9,7 @@ import {
 } from '../db/schema';
 import { db } from '../db/db';
 import { asc, count, desc, eq, like, or, sql, SQL } from 'drizzle-orm';
+import { createOrderByValue, OrderByDefinition } from '../util/order-by-build';
 
 /**
  * Responsible for supplier CRUD logic.
@@ -96,17 +97,14 @@ export namespace SupplierService {
 	/**
 	 * Obtains all suppliers.
 	 *
-	 * @param orderBy the key to order by, defaults to `'name'`
-	 * @param orderDir the direction in which the `orderBy` should be applied, default `'asc'`
+	 * @param orderBy the structure to order by, defaults to `'name'`
 	 * @param where a where statement to include in the query
 	 */
-	export async function get(
-		orderBy: keyof Supplier = 'name',
-		orderDir: 'asc' | 'desc' = 'asc',
-		where?: SQL<unknown>,
-	) {
-		const orderCol = supplierTable[orderBy];
-		const orderByValue = orderDir === 'asc' ? asc(orderCol) : desc(orderCol);
-		return await db.select().from(supplierTable).orderBy(orderByValue).where(where);
+	export async function get(orderBy: OrderByDefinition<Supplier> = 'name', where?: SQL<unknown>) {
+		return await db
+			.select()
+			.from(supplierTable)
+			.orderBy(...createOrderByValue(orderBy, supplierTable))
+			.where(where);
 	}
 }

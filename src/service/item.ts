@@ -10,6 +10,7 @@ import {
 } from '../db/schema';
 import { z } from 'zod';
 import { asNumber } from '../util/as-number';
+import { createOrderByValue, OrderByDefinition } from '../util/order-by-build';
 
 /**
  * Responsible for item CRUD logic.
@@ -115,43 +116,24 @@ export namespace ItemService {
 	/**
 	 * Obtains items in bulk, with pagination support.
 	 *
-	 * Included in each item result is the total quantity
-	 * that the item has of a certain type, by default
-	 * the active quantity.
-	 *
 	 * @param limit the maximum amount of rows to get
 	 * @param offset the amount of rows to skip, default `0`
-	 * @param orderBy the key to order by, defaults to `'totalQty'`
-	 * @param orderDir the direction in which the `orderBy` should be applied, default `'asc'`
-	 * @param quantityType the type of quantity to include in the result, default `'active'`
+	 * @param orderBy the structure to order by, defaults to `'name'`
 	 * @param where a where statement to include in the query
 	 */
-	export async function getWithQuantity(
+	export async function get(
 		limit: number,
 		offset = 0,
-		orderBy: keyof Item | 'totalQty' = 'totalQty',
-		orderDir: 'asc' | 'desc' = 'asc',
-		quantityType: BatchStatus = 'active',
+		orderBy: OrderByDefinition<Item> = 'name',
 		where?: SQL<unknown>,
 	) {
-		const totalQtyCol = sum(batchTable.qty);
-		const orderCol = orderBy === 'totalQty' ? totalQtyCol : itemTable[orderBy];
-		const orderByValue = orderDir === 'asc' ? asc(orderCol) : desc(orderCol);
-
-		const res = await db
-			.select({ ...getTableColumns(itemTable), totalQty: totalQtyCol })
+		return await db
+			.select()
 			.from(itemTable)
-			.leftJoin(
-				batchTable,
-				and(eq(batchTable.itemId, itemTable.id), eq(batchTable.status, quantityType)),
-			)
-			.groupBy(itemTable.id)
-			.orderBy(orderByValue)
+			.orderBy(...createOrderByValue(orderBy, itemTable))
 			.where(where)
 			.limit(limit)
 			.offset(offset);
-
-		return res.map((v) => ({ ...v, totalQty: asNumber(v.totalQty, 0) }));
 	}
 
 	/**
@@ -160,25 +142,19 @@ export namespace ItemService {
 	 * @param query the search query, i.e. partial or complete item name
 	 * @param limit the maximum amount of items to get
 	 * @param offset the amount of items to skip, default `0`
-	 * @param orderBy the key to order by, defaults to `'totalQty'`
-	 * @param orderDir the direction in which the `orderBy` should be applied, default `'asc'`
-	 * @param quantityType the type of quantity to include in the result, default `'active'`
+	 * @param orderBy the structure to order by, defaults to `'name'`
 	 * @return an array of items matching the query input
 	 */
-	export async function findByNameWithQuantity(
+	export async function findByName(
 		query: string,
 		limit: number,
 		offset?: number,
-		orderBy?: keyof Item,
-		orderDir?: 'asc' | 'desc',
-		quantityType?: BatchStatus,
+		orderBy?: OrderByDefinition<Item>,
 	) {
-		return await getWithQuantity(
+		return await get(
 			limit,
 			offset,
 			orderBy,
-			orderDir,
-			quantityType,
 			like(sql`LOWER(${itemTable.name})`, `%${query.toLowerCase()}%`),
 		);
 	}

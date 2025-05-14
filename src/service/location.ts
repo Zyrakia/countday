@@ -9,6 +9,7 @@ import {
 } from '../db/schema';
 import { db } from '../db/db';
 import { asc, count, desc, eq, like, or, sql, SQL } from 'drizzle-orm';
+import { OrderByDefinition, createOrderByValue } from '../util/order-by-build';
 
 /**
  * Responsible for location CRUD logic.
@@ -94,57 +95,16 @@ export namespace LocationService {
 	}
 
 	/**
-	 * Obtains locations in bulk, with pagination support.
+	 * Obtains all locations.
 	 *
-	 * @param limit the maximum amount of rows to get
-	 * @param offset the amount of rows to skip, default `0`
-	 * @param orderBy the key to order by, defaults to `'name'`
-	 * @param orderDir the direction in which the `orderBy` should be applied, default `'asc'`
+	 * @param orderBy the structure to order by, defaults to `'name'`
 	 * @param where a where statement to include in the query
 	 */
-	export async function get(
-		limit: number,
-		offset = 0,
-		orderBy: keyof Location = 'name',
-		orderDir: 'asc' | 'desc' = 'asc',
-		where?: SQL<unknown>,
-	) {
-		const orderCol = locationTable[orderBy];
-		const orderByValue = orderDir === 'asc' ? asc(orderCol) : desc(orderCol);
-
-		const q = db
+	export async function get(orderBy: OrderByDefinition<Location> = 'name', where?: SQL<unknown>) {
+		return await db
 			.select()
 			.from(locationTable)
-			.orderBy(orderByValue)
-			.where(where)
-			.limit(limit)
-			.offset(offset);
-	}
-
-	/**
-	 * Searches for locations by name.
-	 *
-	 * @param query the search query, i.e. partial or complete location name
-	 * @param limit the maximum amount of rows to get
-	 * @param offset the amount of rows to skip, default `0`
-	 * @param orderBy the key to order by, defaults to `'name'`
-	 * @param orderDir the direction in which the `orderBy` should be applied, default `'asc'`
-	 */
-	export async function findByName(
-		query: string,
-		limit: number,
-		offset?: number,
-		orderBy?: keyof Location,
-		orderDir?: 'asc' | 'desc',
-	) {
-		const queryPattern = `%${query.toLowerCase()}%`;
-
-		return await get(
-			limit,
-			offset,
-			orderBy,
-			orderDir,
-			like(sql`LOWER(${locationTable.name})`, queryPattern),
-		);
+			.orderBy(...createOrderByValue(orderBy, locationTable))
+			.where(where);
 	}
 }

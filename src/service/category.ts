@@ -8,6 +8,7 @@ import {
 } from '../db/schema';
 import { db } from '../db/db';
 import { asc, count, desc, eq, like, or, sql, SQL } from 'drizzle-orm';
+import { createOrderByValue, OrderByDefinition } from '../util/order-by-build';
 
 /**
  * Responsible for category CRUD logic.
@@ -88,19 +89,16 @@ export namespace CategoryService {
 	}
 
 	/**
-	 * Obtains all categories, with pagination support.
+	 * Obtains all categories.
 	 *
-	 * @param orderBy the key to order by, defaults to `'name'`
-	 * @param orderDir the direction in which the `orderBy` should be applied, default `'asc'`
+	 * @param orderBy the structure to order by, defaults to `'name'`
 	 * @param where a where statement to include in the query
 	 */
-	export async function get(
-		orderBy: keyof Category = 'name',
-		orderDir: 'asc' | 'desc' = 'asc',
-		where?: SQL<unknown>,
-	) {
-		const orderCol = categoryTable[orderBy];
-		const orderByValue = orderDir === 'asc' ? asc(orderCol) : desc(orderCol);
-		return await db.select().from(categoryTable).orderBy(orderByValue).where(where);
+	export async function get(orderBy: OrderByDefinition<Category> = 'name', where?: SQL<unknown>) {
+		return await db
+			.select()
+			.from(categoryTable)
+			.orderBy(...createOrderByValue(orderBy, categoryTable))
+			.where(where);
 	}
 }
