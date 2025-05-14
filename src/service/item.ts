@@ -1,10 +1,11 @@
-import { and, asc, count, desc, eq, getTableColumns, like, SQL, sql, sum } from 'drizzle-orm';
+import { and, asc, count, desc, eq, getTableColumns, like, or, SQL, sql, sum } from 'drizzle-orm';
 import { db } from '../db/db';
 import {
 	BatchStatus,
 	batchTable,
 	insertItemSchema,
 	Item,
+	itemFormTable,
 	itemTable,
 	updateItemSchema,
 } from '../db/schema';
@@ -61,7 +62,7 @@ export namespace ItemService {
 	 * Calculates the amount of batches that would be deleted
 	 * when an associated item is deleted.
 	 *
-	 * @param id the ID of the item to check
+	 * @param id the ID of the item to check, does not accept form ID
 	 * @return the amount of batches that would be deleted
 	 */
 	export async function getDeleteImpact(id: string) {
@@ -74,15 +75,24 @@ export namespace ItemService {
 	}
 
 	/**
-	 * Obtains an item based on an ID.
+	 * Obtains an item based on an ID or form ID.
 	 *
 	 * @param id the ID of the item to get
 	 * @return the item, or undefined if not found
 	 */
 	export async function getOne(id: string) {
-		return await db.query.itemTable.findFirst({
-			where: (item, { eq }) => eq(item.id, id),
-		});
+		const [res] = await db
+			.select({
+				...getTableColumns(itemTable),
+				formId: itemFormTable.id,
+				formQtyMultiplier: itemFormTable.qtyMultiplier,
+			})
+			.from(itemTable)
+			.leftJoin(itemFormTable, eq(itemTable.id, itemFormTable.itemId))
+			.where(or(eq(itemTable.id, id), eq(itemFormTable.id, id)))
+			.limit(1);
+
+		return res;
 	}
 
 	/**
@@ -145,17 +155,22 @@ export namespace ItemService {
 	 * @param orderBy the structure to order by, defaults to `'name'`
 	 * @return an array of items matching the query input
 	 */
-	export async function findByName(
+	export async function find(
 		query: string,
 		limit: number,
 		offset?: number,
 		orderBy?: OrderByDefinition<Item>,
 	) {
+		const queryTemplate = `%${query.toLowerCase()}%`;
+
 		return await get(
 			limit,
 			offset,
 			orderBy,
-			like(sql`LOWER(${itemTable.name})`, `%${query.toLowerCase()}%`),
+			or(
+				like(sql`LOWER(${itemTable.name})`, queryTemplate),
+				like(sql`LOWER(${itemTable.description})`, queryTemplate),
+			),
 		);
 	}
 }

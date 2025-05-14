@@ -28,7 +28,7 @@ export const categoryTable = sqliteTable('category', {
 });
 
 export const itemTable = sqliteTable('item', {
-	id: text().primaryKey(),
+	id: randomIdColumn(),
 	name: text().notNull(),
 	uom: text().notNull(),
 	categoryId: text().references(() => categoryTable.id, { onDelete: 'set null' }),
@@ -40,6 +40,14 @@ export const itemTable = sqliteTable('item', {
 	targetMargin: real(),
 	defaultSupplierId: text().references(() => supplierTable.id, { onDelete: 'set null' }),
 	defaultLocationId: text().references(() => locationTable.id, { onDelete: 'set null' }),
+});
+
+export const itemFormTable = sqliteTable('item_form', {
+	id: text().primaryKey(),
+	itemId: text()
+		.references(() => itemTable.id, { onDelete: 'cascade' })
+		.notNull(),
+	qtyMultiplier: real().notNull(),
 });
 
 const batchStatusValues = ['active', 'archived', 'expired'] as const;
@@ -94,8 +102,12 @@ export const insertCategorySchema = createInsertSchema(categoryTable).omit({ id:
 export const updateCategorySchema = createUpdateSchema(categoryTable).omit({ id: true });
 
 export const selectItemSchema = createSelectSchema(itemTable);
-export const insertItemSchema = createInsertSchema(itemTable);
+export const insertItemSchema = createInsertSchema(itemTable).omit({ id: true });
 export const updateItemSchema = createUpdateSchema(itemTable).omit({ id: true });
+
+export const selectItemFormSchema = createSelectSchema(itemFormTable);
+export const insertItemFormSchema = createInsertSchema(itemFormTable);
+export const updateItemFormSchema = createUpdateSchema(itemFormTable);
 
 export const selectBatchSchema = createSelectSchema(batchTable);
 export const insertBatchSchema = createInsertSchema(batchTable, {
@@ -129,6 +141,7 @@ export type Supplier = z.infer<typeof selectSupplierSchema>;
 export type Location = z.infer<typeof selectLocationSchema>;
 export type Category = z.infer<typeof selectCategorySchema>;
 export type Item = z.infer<typeof selectItemSchema>;
+export type ItemForm = z.infer<typeof selectItemFormSchema>;
 export type Batch = z.infer<typeof selectBatchSchema>;
 export type Count = z.infer<typeof selectCountSchema>;
 export type BatchCount = z.infer<typeof selectBatchCountSchema>;
