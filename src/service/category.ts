@@ -1,13 +1,10 @@
+import { count, eq, SQL } from 'drizzle-orm';
 import { z } from 'zod';
-import {
-	insertCategorySchema,
-	itemTable,
-	Category,
-	categoryTable,
-	updateCategorySchema,
-} from '../db/schema';
+
 import { db } from '../db/db';
-import { asc, count, desc, eq, like, or, sql, SQL } from 'drizzle-orm';
+import {
+    Category, categoryTable, insertCategorySchema, itemTable, updateCategorySchema
+} from '../db/schema';
 import { createOrderByValue, OrderByDefinition } from '../util/order-by-build';
 
 /**

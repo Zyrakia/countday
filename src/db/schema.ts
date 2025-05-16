@@ -1,6 +1,6 @@
-import { sqliteTable, text, real, primaryKey, integer } from 'drizzle-orm/sqlite-core';
-import { v4 as uuid } from 'uuid';
+import { integer, primaryKey, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
+import { v4 as uuid } from 'uuid';
 import { z } from 'zod';
 
 const randomIdColumn = () =>

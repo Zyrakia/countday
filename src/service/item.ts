@@ -1,16 +1,10 @@
-import { and, asc, count, desc, eq, getTableColumns, like, or, SQL, sql, sum } from 'drizzle-orm';
+import { count, eq, getTableColumns, like, or, SQL, sql } from 'drizzle-orm';
+import { z } from 'zod';
+
 import { db } from '../db/db';
 import {
-	BatchStatus,
-	batchTable,
-	insertItemSchema,
-	Item,
-	itemFormTable,
-	itemTable,
-	updateItemSchema,
+    batchTable, insertItemSchema, Item, itemFormTable, itemTable, updateItemSchema
 } from '../db/schema';
-import { z } from 'zod';
-import { asNumber } from '../util/as-number';
 import { createOrderByValue, OrderByDefinition } from '../util/order-by-build';
 
 /**

@@ -1,14 +1,10 @@
+import { count, eq, SQL } from 'drizzle-orm';
 import { z } from 'zod';
-import {
-	batchTable,
-	insertSupplierSchema,
-	itemTable,
-	Supplier,
-	supplierTable,
-	updateSupplierSchema,
-} from '../db/schema';
+
 import { db } from '../db/db';
-import { asc, count, desc, eq, like, or, sql, SQL } from 'drizzle-orm';
+import {
+    batchTable, insertSupplierSchema, itemTable, Supplier, supplierTable, updateSupplierSchema
+} from '../db/schema';
 import { createOrderByValue, OrderByDefinition } from '../util/order-by-build';
 
 /**
