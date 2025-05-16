@@ -141,8 +141,8 @@ export namespace ItemService {
 		return await db
 			.select()
 			.from(itemTable)
-			.orderBy(...createOrderByValue(orderBy, itemTable))
 			.where(where)
+			.orderBy(...createOrderByValue(orderBy, itemTable))
 			.limit(limit)
 			.offset(offset);
 	}

@@ -98,7 +98,7 @@ export namespace CategoryService {
 		return await db
 			.select()
 			.from(categoryTable)
-			.orderBy(...createOrderByValue(orderBy, categoryTable))
-			.where(where);
+			.where(where)
+			.orderBy(...createOrderByValue(orderBy, categoryTable));
 	}
 }

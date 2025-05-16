@@ -104,7 +104,7 @@ export namespace LocationService {
 		return await db
 			.select()
 			.from(locationTable)
-			.orderBy(...createOrderByValue(orderBy, locationTable))
-			.where(where);
+			.where(where)
+			.orderBy(...createOrderByValue(orderBy, locationTable));
 	}
 }

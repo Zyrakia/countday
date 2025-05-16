@@ -104,7 +104,7 @@ export namespace SupplierService {
 		return await db
 			.select()
 			.from(supplierTable)
-			.orderBy(...createOrderByValue(orderBy, supplierTable))
-			.where(where);
+			.where(where)
+			.orderBy(...createOrderByValue(orderBy, supplierTable));
 	}
 }
