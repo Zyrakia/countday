@@ -118,7 +118,7 @@ export const insertBatchSchema = createInsertSchema(batchTable, {
 export const updateBatchSchema = createUpdateSchema(batchTable, {
 	receivedDate: optionalDtRefinement,
 	expiryDate: optionalDtRefinement,
-}).omit({ id: true, itemId: true, stockoutDate: true });
+}).omit({ id: true, itemId: true });
 
 export const selectCountSchema = createSelectSchema(countTable);
 export const insertCountSchema = createInsertSchema(countTable, {

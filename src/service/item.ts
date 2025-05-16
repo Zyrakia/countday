@@ -96,34 +96,6 @@ export namespace ItemService {
 	}
 
 	/**
-	 * Calculates the total active quantity of an item based on it's ID.
-	 *
-	 * @param id the ID of the item
-	 * @return the total active quantity the item has, or 0 by default
-	 */
-	export async function getActiveQuantity(id: string) {
-		const [{ qty }] = await db
-			.select({ qty: sum(batchTable.qty) })
-			.from(batchTable)
-			.where(and(eq(batchTable.itemId, id), eq(batchTable.status, 'active')));
-
-		return asNumber(qty, 0);
-	}
-
-	/**
-	 * Obtains an item and it's current active quantity.
-	 *
-	 * @param id the ID of the item to get
-	 * @return the item with it's total quantity calculated
-	 */
-	export async function getWithActiveQty(id: string) {
-		const item = await getOne(id);
-		if (!item) return;
-
-		return { ...item, totalQty: await getActiveQuantity(id) };
-	}
-
-	/**
 	 * Obtains items in bulk, with pagination support.
 	 *
 	 * @param limit the maximum amount of rows to get
