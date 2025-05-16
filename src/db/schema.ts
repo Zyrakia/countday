@@ -65,6 +65,7 @@ export const batchTable = sqliteTable('batch', {
 	locationId: text().references(() => locationTable.id, { onDelete: 'set null' }),
 	supplierId: text().references(() => supplierTable.id, { onDelete: 'set null' }),
 	receivedDate: text().notNull(),
+	stockoutDate: text(),
 	expiryDate: text(),
 });
 
@@ -111,13 +112,13 @@ export const updateItemFormSchema = createUpdateSchema(itemFormTable);
 
 export const selectBatchSchema = createSelectSchema(batchTable);
 export const insertBatchSchema = createInsertSchema(batchTable, {
-	receivedDate: optionalDtRefinement,
+	receivedDate: dtRefinement,
 	expiryDate: optionalDtRefinement,
-}).omit({ id: true });
+}).omit({ id: true, stockoutDate: true });
 export const updateBatchSchema = createUpdateSchema(batchTable, {
 	receivedDate: optionalDtRefinement,
 	expiryDate: optionalDtRefinement,
-}).omit({ id: true, itemId: true });
+}).omit({ id: true, itemId: true, stockoutDate: true });
 
 export const selectCountSchema = createSelectSchema(countTable);
 export const insertCountSchema = createInsertSchema(countTable, {
