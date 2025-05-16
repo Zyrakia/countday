@@ -25,7 +25,7 @@ export namespace ItemService {
 	 */
 	export async function insert(item: z.infer<typeof insertItemSchema>) {
 		const [inserted] = await db.insert(itemTable).values(item).returning();
-		return inserted;
+		if (inserted) return inserted;
 	}
 
 	/**
@@ -42,7 +42,7 @@ export namespace ItemService {
 			.where(eq(itemTable.id, id))
 			.returning();
 
-		return updated;
+		if (updated) return updated;
 	}
 
 	/**
@@ -55,7 +55,7 @@ export namespace ItemService {
 	 */
 	export async function remove(id: string) {
 		const [deleted] = await db.delete(itemTable).where(eq(itemTable.id, id)).returning();
-		return deleted;
+		if (deleted) return deleted;
 	}
 
 	/**
@@ -77,10 +77,10 @@ export namespace ItemService {
 	/**
 	 * Obtains an item based on an ID or form ID.
 	 *
-	 * @param id the ID of the item to get
+	 * @param idOrFormId the ID of the item to get
 	 * @return the item, or undefined if not found
 	 */
-	export async function getOne(id: string) {
+	export async function getOne(idOrFormId: string) {
 		const [res] = await db
 			.select({
 				...getTableColumns(itemTable),
@@ -89,10 +89,10 @@ export namespace ItemService {
 			})
 			.from(itemTable)
 			.leftJoin(itemFormTable, eq(itemTable.id, itemFormTable.itemId))
-			.where(or(eq(itemTable.id, id), eq(itemFormTable.id, id)))
+			.where(or(eq(itemTable.id, idOrFormId), eq(itemFormTable.id, idOrFormId)))
 			.limit(1);
 
-		return res;
+		if (res) return res;
 	}
 
 	/**
@@ -130,6 +130,7 @@ export namespace ItemService {
 	 * @param offset the amount of rows to skip, default `0`
 	 * @param orderBy the structure to order by, defaults to `'name'`
 	 * @param where a where statement to include in the query
+	 * @return an array of items matching the query input
 	 */
 	export async function get(
 		limit: number,
