@@ -52,7 +52,6 @@ export const itemFormTable = sqliteTable('item_form', {
 
 const batchStatusValues = ['active', 'archived', 'expired'] as const;
 export type BatchStatus = (typeof batchStatusValues)[number];
-const batchStatusSchema = z.enum(batchStatusValues);
 
 export const batchTable = sqliteTable('batch', {
 	id: randomIdColumn(),
@@ -64,7 +63,7 @@ export const batchTable = sqliteTable('batch', {
 	status: text('status', { enum: batchStatusValues }).default('active').notNull(),
 	locationId: text().references(() => locationTable.id, { onDelete: 'set null' }),
 	supplierId: text().references(() => supplierTable.id, { onDelete: 'set null' }),
-	receivedDate: text().notNull(),
+	createdDate: text().notNull(),
 	stockoutDate: text(),
 	expiryDate: text(),
 });
@@ -75,14 +74,33 @@ export const countTable = sqliteTable('count', {
 	finishedDate: text(),
 });
 
-export const batchCountTable = sqliteTable(
-	'batch_count',
+export const itemCountTable = sqliteTable(
+	'item_count',
 	{
-		countId: text().references(() => countTable.id, { onDelete: 'cascade' }),
-		itemId: text().references(() => itemTable.id, { onDelete: 'cascade' }),
+		countId: text()
+			.references(() => countTable.id, { onDelete: 'cascade' })
+			.notNull(),
+		itemId: text()
+			.references(() => itemTable.id, { onDelete: 'cascade' })
+			.notNull(),
+		batchId: text().references(() => batchTable.id, { onDelete: 'cascade' }),
 		countedQty: real().notNull(),
-		expectedQty: real().notNull(),
 		countedDate: text().notNull(),
+	},
+	(table) => [primaryKey({ columns: [table.countId, table.itemId, table.batchId] })],
+);
+
+export const countDriftTable = sqliteTable(
+	'count_drift',
+	{
+		countId: text()
+			.references(() => countTable.id, { onDelete: 'cascade' })
+			.notNull(),
+		itemId: text()
+			.references(() => itemTable.id, { onDelete: 'cascade' })
+			.notNull(),
+		qtyChange: real().notNull(),
+		driftDate: text().notNull(),
 	},
 	(table) => [primaryKey({ columns: [table.countId, table.itemId] })],
 );
@@ -112,30 +130,29 @@ export const updateItemFormSchema = createUpdateSchema(itemFormTable);
 
 export const selectBatchSchema = createSelectSchema(batchTable);
 export const insertBatchSchema = createInsertSchema(batchTable, {
-	receivedDate: dtRefinement,
 	expiryDate: optionalDtRefinement,
-}).omit({ id: true, stockoutDate: true });
+}).omit({ id: true, createdDate: true, stockoutDate: true });
 export const updateBatchSchema = createUpdateSchema(batchTable, {
-	receivedDate: optionalDtRefinement,
 	expiryDate: optionalDtRefinement,
-}).omit({ id: true, itemId: true });
+}).omit({ id: true, itemId: true, createdDate: true, stockoutDate: true });
 
 export const selectCountSchema = createSelectSchema(countTable);
-export const insertCountSchema = createInsertSchema(countTable, {
-	startedDate: dtRefinement,
-	finishedDate: optionalDtRefinement,
-}).omit({ id: true });
 
-export const selectBatchCountSchema = createSelectSchema(batchCountTable);
-export const insertBatchCountSchema = createInsertSchema(batchCountTable).omit({
-	countedDate: true,
-	expectedQty: true,
-});
-export const updateBatchCountSchema = createUpdateSchema(batchCountTable, {}).omit({
+export const selectItemCountSchema = createSelectSchema(itemCountTable);
+export const insertItemCountSchema = createInsertSchema(itemCountTable).omit({ countedDate: true });
+export const updateItemCountSchema = createUpdateSchema(itemCountTable).omit({
 	itemId: true,
 	countId: true,
-	expectedQty: true,
 	countedDate: true,
+	batchId: true,
+});
+
+export const selectCountDriftSchema = createSelectSchema(countDriftTable);
+export const insertCountDriftSchema = createInsertSchema(countDriftTable).omit({ driftDate: true });
+export const updateCountDriftSchema = createUpdateSchema(countDriftTable).omit({
+	countId: true,
+	driftDate: true,
+	itemId: true,
 });
 
 export type Supplier = z.infer<typeof selectSupplierSchema>;
@@ -145,4 +162,5 @@ export type Item = z.infer<typeof selectItemSchema>;
 export type ItemForm = z.infer<typeof selectItemFormSchema>;
 export type Batch = z.infer<typeof selectBatchSchema>;
 export type Count = z.infer<typeof selectCountSchema>;
-export type BatchCount = z.infer<typeof selectBatchCountSchema>;
+export type ItemCount = z.infer<typeof selectItemCountSchema>;
+export type CountDrift = z.infer<typeof selectCountDriftSchema>;

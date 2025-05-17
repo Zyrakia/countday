@@ -5,9 +5,11 @@ import { Batch, batchTable, insertBatchSchema, updateBatchSchema } from '../db/s
 import { createOrderByValue, OrderByDefinition } from '../util/order-by-build';
 import { z } from 'zod';
 import { ItemService } from './item';
+import { nowIso } from '../util/now';
 
 /**
- * Handles CRUD operations for batches.
+ * Handles RUD operations for batches. Creation of batches
+ * is handled in the stock service.
  */
 export namespace BatchService {
 	/**
@@ -24,6 +26,7 @@ export namespace BatchService {
 			.insert(batchTable)
 			.values({
 				...batch,
+				createdDate: nowIso(),
 				locationId: batch.locationId ?? item.defaultLocationId,
 				supplierId: batch.supplierId ?? item.defaultSupplierId,
 			})
@@ -96,7 +99,7 @@ export namespace BatchService {
 	 * @param itemId the ID of the item to query for
 	 * @param limit the maximum amount of rows to get
 	 * @param offset the amount of rows to skip, default `0`
-	 * @param orderBy the structure to order by, defaults to `'receivedDate'`
+	 * @param orderBy the structure to order by, defaults to `'createdDate'`
 	 * @param where a where statement to include in the query
 	 * @return all batches matching the query input
 	 */
@@ -104,7 +107,7 @@ export namespace BatchService {
 		itemId: string,
 		limit: number,
 		offset = 0,
-		orderBy: OrderByDefinition<Batch> = 'receivedDate',
+		orderBy: OrderByDefinition<Batch> = 'createdDate',
 		where?: SQL<unknown>,
 	) {
 		return await db
