@@ -23,7 +23,8 @@ type Helpers<C, A extends Actions<C>> = {
 	$with: <C2 extends C>(client: C2) => Service<C2, A>;
 };
 
-export type Service<C extends unknown, A extends Actions<C>> = MappedActions<C, A> & Helpers<C, A>;
+export type Service<C extends unknown, A extends Actions<C>> = Readonly<MappedActions<C, A>> &
+	Helpers<C, A>;
 
 /**
  * Creates a new service with an initial client.
@@ -52,7 +53,7 @@ export function createService<C extends unknown, A extends Actions<C>>(
 	) as MappedActions<C, A>;
 
 	return {
-		...serviceMethods,
+		...Object.freeze(serviceMethods),
 		$with: <C2 extends C>(newClient: C2) => {
 			return createService(newClient, actions);
 		},

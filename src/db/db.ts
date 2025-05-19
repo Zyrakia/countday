@@ -7,4 +7,8 @@ import * as schema from './schema';
 const sqlite = new Database(env.DB_FILENAME);
 sqlite.exec('PRAGMA foreign_keys = ON');
 
-export const db = drizzle(sqlite, { casing: 'snake_case', schema });
+const _db = drizzle(sqlite, { casing: 'snake_case', schema });
+export type DatabaseClient = Omit<typeof _db, '$client'>;
+
+const db = _db as DatabaseClient;
+export { db };

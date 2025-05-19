@@ -3,24 +3,31 @@ import { z } from 'zod';
 
 import { db } from '../db/db';
 import {
-    batchTable, insertItemSchema, Item, itemFormTable, itemTable, updateItemSchema
+	batchTable,
+	insertItemSchema,
+	Item,
+	itemFormTable,
+	itemTable,
+	updateItemSchema,
 } from '../db/schema';
 import { createOrderByValue, OrderByDefinition } from '../util/order-by-build';
+import { createService } from '../util/create-service';
 
 /**
  * Responsible for item CRUD logic.
  */
-export namespace ItemService {
+export const ItemService = createService(db, {
 	/**
 	 * Creates a new item.
 	 *
 	 * @param item the properties of the item
 	 * @return the created item, or nothing if the insert didn't occur
 	 */
-	export async function insert(item: z.infer<typeof insertItemSchema>) {
-		const [inserted] = await db.insert(itemTable).values(item).returning();
-		if (inserted) return inserted;
-	}
+	insert: async (client, item: z.infer<typeof insertItemSchema>) => {
+		const [inserted] = await client.insert(itemTable).values(item).returning();
+		if (!inserted) throw `Unknown insertion error`;
+		return inserted;
+	},
 
 	/**
 	 * Updates an item based on an ID.
@@ -29,15 +36,16 @@ export namespace ItemService {
 	 * @param partial the properties to update on the item
 	 * @return the updated item, or nothing if the update didn't occur
 	 */
-	export async function update(id: string, partial: z.infer<typeof updateItemSchema>) {
-		const [updated] = await db
+	update: async (client, id: string, partial: z.infer<typeof updateItemSchema>) => {
+		const [updated] = await client
 			.update(itemTable)
 			.set(partial)
 			.where(eq(itemTable.id, id))
 			.returning();
 
-		if (updated) return updated;
-	}
+		if (!updated) throw `Unable to update item by ID "${id}"`;
+		return updated;
+	},
 
 	/**
 	 * Delete an item based on an ID.
@@ -47,10 +55,11 @@ export namespace ItemService {
 	 * @param id the ID of the item to delete
 	 * @return the deleted item, or nothing if the deletion didn't occur
 	 */
-	export async function remove(id: string) {
-		const [deleted] = await db.delete(itemTable).where(eq(itemTable.id, id)).returning();
-		if (deleted) return deleted;
-	}
+	remove: async (client, id: string) => {
+		const [deleted] = await client.delete(itemTable).where(eq(itemTable.id, id)).returning();
+		if (!deleted) throw `Unable to delete item by ID "${id}"`;
+		return deleted;
+	},
 
 	/**
 	 * Calculates the amount of batches that would be deleted
@@ -59,14 +68,13 @@ export namespace ItemService {
 	 * @param id the ID of the item to check, does not accept form ID
 	 * @return the amount of batches that would be deleted
 	 */
-	export async function getDeleteImpact(id: string) {
-		const [{ total }] = await db
+	getDeleteImpact: async (client, id: string) => {
+		const [{ total }] = await client
 			.select({ total: count() })
 			.from(batchTable)
 			.where(eq(batchTable.itemId, id));
-
 		return total;
-	}
+	},
 
 	/**
 	 * Obtains an item based on an ID or form ID.
@@ -74,8 +82,8 @@ export namespace ItemService {
 	 * @param idOrFormId the ID of the item to get
 	 * @return the item, or undefined if not found
 	 */
-	export async function getOne(idOrFormId: string) {
-		const [res] = await db
+	getOne: async (client, idOrFormId: string) => {
+		const [res] = await client
 			.select({
 				...getTableColumns(itemTable),
 				formId: itemFormTable.id,
@@ -86,8 +94,9 @@ export namespace ItemService {
 			.where(or(eq(itemTable.id, idOrFormId), eq(itemFormTable.id, idOrFormId)))
 			.limit(1);
 
-		if (res) return res;
-	}
+		if (!res) throw `Unable to retrieve item by ID or form ID "${idOrFormId}"`;
+		return res;
+	},
 
 	/**
 	 * Obtains items in bulk, with pagination support.
@@ -98,20 +107,21 @@ export namespace ItemService {
 	 * @param where a where statement to include in the query
 	 * @return an array of items matching the query input
 	 */
-	export async function get(
+	get: async (
+		client,
 		limit: number,
 		offset = 0,
 		orderBy: OrderByDefinition<Item> = 'name',
 		where?: SQL<unknown>,
-	) {
-		return await db
+	) => {
+		return await client
 			.select()
 			.from(itemTable)
 			.where(where)
 			.orderBy(...createOrderByValue(orderBy, itemTable))
 			.limit(limit)
 			.offset(offset);
-	}
+	},
 
 	/**
 	 * Searches for items by name without case sensitivity.
@@ -122,15 +132,16 @@ export namespace ItemService {
 	 * @param orderBy the structure to order by, defaults to `'name'`
 	 * @return an array of items matching the query input
 	 */
-	export async function find(
+	find: async (
+		_,
 		query: string,
 		limit: number,
 		offset?: number,
 		orderBy?: OrderByDefinition<Item>,
-	) {
+	) => {
 		const queryTemplate = `%${query.toLowerCase()}%`;
 
-		return await get(
+		return await ItemService.get(
 			limit,
 			offset,
 			orderBy,
@@ -139,5 +150,5 @@ export namespace ItemService {
 				like(sql`LOWER(${itemTable.description})`, queryTemplate),
 			),
 		);
-	}
-}
+	},
+});

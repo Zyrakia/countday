@@ -3,24 +3,30 @@ import { z } from 'zod';
 
 import { db } from '../db/db';
 import {
-    Category, categoryTable, insertCategorySchema, itemTable, updateCategorySchema
+	Category,
+	categoryTable,
+	insertCategorySchema,
+	itemTable,
+	updateCategorySchema,
 } from '../db/schema';
 import { createOrderByValue, OrderByDefinition } from '../util/order-by-build';
+import { createService } from '../util/create-service';
 
 /**
  * Responsible for category CRUD logic.
  */
-export namespace CategoryService {
+export const CategoryService = createService(db, {
 	/**
 	 * Creates a new category.
 	 *
 	 * @param category the properties of the category
 	 * @return the created category, or nothing if the insert didn't occur
 	 */
-	export async function insert(category: z.infer<typeof insertCategorySchema>) {
-		const [inserted] = await db.insert(categoryTable).values(category).returning();
-		if (inserted) return inserted;
-	}
+	insert: async (client, category: z.infer<typeof insertCategorySchema>) => {
+		const [inserted] = await client.insert(categoryTable).values(category).returning();
+		if (!inserted) throw `Unknown insertion error`;
+		return inserted;
+	},
 
 	/**
 	 * Updates a category based on ID.
@@ -29,15 +35,16 @@ export namespace CategoryService {
 	 * @param partial the properties to update on the category
 	 * @return the updated category, or nothing if the update didn't occur
 	 */
-	export async function update(id: string, partial: z.infer<typeof updateCategorySchema>) {
-		const [updated] = await db
+	update: async (client, id: string, partial: z.infer<typeof updateCategorySchema>) => {
+		const [updated] = await client
 			.update(categoryTable)
 			.set(partial)
 			.where(eq(categoryTable.id, id))
 			.returning();
 
-		if (updated) return updated;
-	}
+		if (!updated) throw `Unable to update category by ID "${id}"`;
+		return updated;
+	},
 
 	/**
 	 * Deletes a category based on an ID.
@@ -48,14 +55,15 @@ export namespace CategoryService {
 	 * @param id the ID of the category to delete
 	 * @return the deleted category, or nothing if the deletion didn't occur
 	 */
-	export async function remove(id: string) {
-		const [deleted] = await db
+	remove: async (client, id: string) => {
+		const [deleted] = await client
 			.delete(categoryTable)
 			.where(eq(categoryTable.id, id))
 			.returning();
 
-		if (deleted) return deleted;
-	}
+		if (!deleted) throw `Unable to delete cateogry by ID "${id}"`;
+		return deleted;
+	},
 
 	/**
 	 * Calculates the amount of items that would have
@@ -64,14 +72,14 @@ export namespace CategoryService {
 	 * @param id the ID of the category to check
 	 * @return the amount of items that would be affected
 	 */
-	export async function getDeleteImpact(id: string) {
-		const [{ totalItems }] = await db
+	getDeleteImpact: async (client, id: string) => {
+		const [{ totalItems }] = await client
 			.select({ totalItems: count() })
 			.from(itemTable)
 			.where(eq(itemTable.categoryId, id));
 
 		return totalItems;
-	}
+	},
 
 	/**
 	 * Obtains a category based on an ID.
@@ -79,11 +87,11 @@ export namespace CategoryService {
 	 * @param id the ID of the category
 	 * @return the category, or undefined if not found
 	 */
-	export async function getOne(id: string) {
-		return await db.query.categoryTable.findFirst({
+	getOne: async (client, id: string) => {
+		return await client.query.categoryTable.findFirst({
 			where: (category, { eq }) => eq(category.id, id),
 		});
-	}
+	},
 
 	/**
 	 * Obtains all categories.
@@ -91,11 +99,11 @@ export namespace CategoryService {
 	 * @param orderBy the structure to order by, defaults to `'name'`
 	 * @param where a where statement to include in the query
 	 */
-	export async function get(orderBy: OrderByDefinition<Category> = 'name', where?: SQL<unknown>) {
-		return await db
+	get: async (client, orderBy: OrderByDefinition<Category> = 'name', where?: SQL<unknown>) => {
+		return await client
 			.select()
 			.from(categoryTable)
 			.where(where)
 			.orderBy(...createOrderByValue(orderBy, categoryTable));
-	}
-}
+	},
+});

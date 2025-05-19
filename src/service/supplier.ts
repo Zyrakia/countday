@@ -3,24 +3,31 @@ import { z } from 'zod';
 
 import { db } from '../db/db';
 import {
-    batchTable, insertSupplierSchema, itemTable, Supplier, supplierTable, updateSupplierSchema
+	batchTable,
+	insertSupplierSchema,
+	itemTable,
+	Supplier,
+	supplierTable,
+	updateSupplierSchema,
 } from '../db/schema';
 import { createOrderByValue, OrderByDefinition } from '../util/order-by-build';
+import { createService } from '../util/create-service';
 
 /**
  * Responsible for supplier CRUD logic.
  */
-export namespace SupplierService {
+export const SupplierService = createService(db, {
 	/**
 	 * Creates a new supplier.
 	 *
 	 * @param supplier the properties of the supplier
 	 * @return the created supplier, or nothing if the insert didn't occur
 	 */
-	export async function insert(supplier: z.infer<typeof insertSupplierSchema>) {
-		const [inserted] = await db.insert(supplierTable).values(supplier).returning();
-		if (inserted) return inserted;
-	}
+	insert: async (client, supplier: z.infer<typeof insertSupplierSchema>) => {
+		const [inserted] = await client.insert(supplierTable).values(supplier).returning();
+		if (!inserted) throw `Unknown insertion error`;
+		return inserted;
+	},
 
 	/**
 	 * Updates a supplier based on ID.
@@ -29,15 +36,16 @@ export namespace SupplierService {
 	 * @param partial the properties to update on the supplier
 	 * @return the updated supplier, or nothing if the update didn't occur
 	 */
-	export async function update(id: string, partial: z.infer<typeof updateSupplierSchema>) {
-		const [updated] = await db
+	update: async (client, id: string, partial: z.infer<typeof updateSupplierSchema>) => {
+		const [updated] = await client
 			.update(supplierTable)
 			.set(partial)
 			.where(eq(supplierTable.id, id))
 			.returning();
 
-		if (updated) return updated;
-	}
+		if (!updated) throw `Unable to update supplier of ID "${id}"`;
+		return updated;
+	},
 
 	/**
 	 * Deletes a supplier based on an ID.
@@ -48,14 +56,15 @@ export namespace SupplierService {
 	 * @param id the ID of the supplier to delete
 	 * @return the deleted supplier, or nothing if the deletion didn't occur
 	 */
-	export async function remove(id: string) {
-		const [deleted] = await db
+	remove: async (client, id: string) => {
+		const [deleted] = await client
 			.delete(supplierTable)
 			.where(eq(supplierTable.id, id))
 			.returning();
 
-		if (deleted) return deleted;
-	}
+		if (!deleted) throw `Unable to delete supplier of ID "${id}"`;
+		return deleted;
+	},
 
 	/**
 	 * Calculates the amount of items and batches that would have
@@ -64,19 +73,19 @@ export namespace SupplierService {
 	 * @param id the ID of the supplier to check
 	 * @return the amount of items and batches that would be affected
 	 */
-	export async function getDeleteImpact(id: string) {
-		const [{ totalItems }] = await db
+	getDeleteImpact: async (client, id: string) => {
+		const [{ totalItems }] = await client
 			.select({ totalItems: count() })
 			.from(itemTable)
 			.where(eq(itemTable.defaultSupplierId, id));
 
-		const [{ totalBatches }] = await db
+		const [{ totalBatches }] = await client
 			.select({ totalBatches: count() })
 			.from(batchTable)
 			.where(eq(batchTable.supplierId, id));
 
 		return { totalItems, totalBatches };
-	}
+	},
 
 	/**
 	 * Obtains a supplier based on an ID.
@@ -84,11 +93,11 @@ export namespace SupplierService {
 	 * @param id the ID of the supplier
 	 * @return the supplier, or undefined if not found
 	 */
-	export async function getOne(id: string) {
-		return await db.query.supplierTable.findFirst({
+	getOne: async (client, id: string) => {
+		return await client.query.supplierTable.findFirst({
 			where: (supplier, { eq }) => eq(supplier.id, id),
 		});
-	}
+	},
 
 	/**
 	 * Obtains all suppliers.
@@ -96,11 +105,11 @@ export namespace SupplierService {
 	 * @param orderBy the structure to order by, defaults to `'name'`
 	 * @param where a where statement to include in the query
 	 */
-	export async function get(orderBy: OrderByDefinition<Supplier> = 'name', where?: SQL<unknown>) {
-		return await db
+	get: async (client, orderBy: OrderByDefinition<Supplier> = 'name', where?: SQL<unknown>) => {
+		return await client
 			.select()
 			.from(supplierTable)
 			.where(where)
 			.orderBy(...createOrderByValue(orderBy, supplierTable));
-	}
-}
+	},
+});

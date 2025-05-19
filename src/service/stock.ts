@@ -7,6 +7,7 @@ import { asNumber } from '../util/as-number';
 import { createOrderByValue, OrderByDefinition } from '../util/order-by-build';
 import { BatchService } from './batch';
 import { ItemService } from './item';
+import { createService } from '../util/create-service';
 
 export enum ConsumptionMethod {
 	/**
@@ -34,6 +35,19 @@ export enum ConsumptionMethod {
 }
 
 /**
+ * Defines the order in which each consumption method needs
+ * to retrieve batches in.
+ */
+const consumptionMethodOrders: Readonly<Record<ConsumptionMethod, OrderByDefinition<Batch>>> = {
+	[ConsumptionMethod.FIFO]: { key: 'receivedDate', dir: 'asc' },
+	[ConsumptionMethod.LIFO]: { key: 'receivedDate', dir: 'desc' },
+	[ConsumptionMethod.FEFO]: [
+		{ key: 'expiryDate', dir: 'asc' },
+		{ key: 'receivedDate', dir: 'asc' },
+	],
+};
+
+/**
  * Responsible for CRUD operations relating to stock, such as
  * modifying and querying item stock.
  *
@@ -41,7 +55,7 @@ export enum ConsumptionMethod {
  * counts or batches, only the interactions between
  * batches and items.
  */
-export namespace StockService {
+export const StockService = createService(db, {
 	/**
 	 * Calculates the total quantity of an item based on it's ID.
 	 *
@@ -49,14 +63,14 @@ export namespace StockService {
 	 * @param qtyType the type of quantity to calculate, defaults to `active`
 	 * @return the total quantity the item has, or 0 by default
 	 */
-	export async function getItemStock(id: string, qtyType: BatchStatus = 'active') {
-		const [{ qty }] = await db
+	getItemStock: async (client, id: string, qtyType: BatchStatus = 'active') => {
+		const [{ qty }] = await client
 			.select({ qty: sum(batchTable.qty) })
 			.from(batchTable)
 			.where(and(eq(batchTable.itemId, id), eq(batchTable.status, 'active')));
 
 		return asNumber(qty, 0);
-	}
+	},
 
 	/**
 	 * Obtains an item and it's current active quantity.
@@ -65,28 +79,16 @@ export namespace StockService {
 	 * @param qtyType the type of quantity to calculate, defaults to `active`
 	 * @return the item with it's total quantity calculated
 	 */
-	export async function getWithQty(idOrFormId: string, qtyType?: BatchStatus) {
-		const item = await ItemService.getOne(idOrFormId);
-		if (!item) return;
+	getWithQty: async (_, idOrFormId: string, qtyType?: BatchStatus) => {
+		const itemRes = await ItemService.getOne(idOrFormId);
+		if (!itemRes.success) throw itemRes.error;
 
-		return { ...item, totalQty: await getItemStock(idOrFormId, qtyType) };
-	}
+		const item = itemRes.data;
+		const stockRes = await StockService.getItemStock(item.id, qtyType);
+		if (!stockRes.success) throw stockRes.error;
 
-	/**
-	 * Helper function to build an SQL CASE block for assigning a priority value to each
-	 * batch status type, allowing for it to be used in sorting.
-	 *
-	 * @param order the mapping of batch status type to priority
-	 * @return the constructed SQL CASE block
-	 */
-	function buildBatchPriorityCase(order: Record<BatchStatus, number>) {
-		const maxPriority = Math.max(...Object.values(order));
-		const whens = Object.entries(order).map(([status, priority]) => {
-			return sql`WHEN ${batchTable.status} = ${status} THEN ${priority}`;
-		});
-
-		return sql`CASE ${sql.join(whens, sql` `)} ELSE ${maxPriority + 1} END`;
-	}
+		return { ...item, totalQty: stockRes.data };
+	},
 
 	/**
 	 * Returns the `x` most important batches of an item for a quick stock overview.
@@ -95,12 +97,21 @@ export namespace StockService {
 	 * @param limit the number of batches to retrieve, defaults to `5`
 	 * @return the most important batches for a specific item, decided by the system
 	 */
-	export async function getBatchSummary(itemId: string, limit = 5) {
+	getBatchSummary: async (client, itemId: string, limit = 5) => {
+		const buildBatchPriorityCase = (order: Record<BatchStatus, number>) => {
+			const maxPriority = Math.max(...Object.values(order));
+			const whens = Object.entries(order).map(([status, priority]) => {
+				return sql`WHEN ${batchTable.status} = ${status} THEN ${priority}`;
+			});
+
+			return sql`CASE ${sql.join(whens, sql` `)} ELSE ${maxPriority + 1} END`;
+		};
+
 		const whenStatus = <T extends SQL>(status: BatchStatus, expr: T) => {
 			return sql`CASE WHEN ${batchTable.status} = ${status} THEN ${expr} ELSE NULL END`;
 		};
 
-		return await db
+		return await client
 			.select()
 			.from(batchTable)
 			.where(eq(batchTable.itemId, itemId))
@@ -124,7 +135,7 @@ export namespace StockService {
 			)
 
 			.limit(limit);
-	}
+	},
 
 	/**
 	 * Returns a list of items in bulk, with pagination support.
@@ -138,7 +149,8 @@ export namespace StockService {
 	 * @param orderBy the structure to order by, defaults to `'totalQty'`
 	 * @param where a where statement to include in the query
 	 */
-	export async function get(
+	get: async (
+		client,
 		qtyType: BatchStatus,
 		limit: number,
 		offset = 0,
@@ -147,14 +159,14 @@ export namespace StockService {
 			dir: qtyType === 'active' ? 'asc' : 'desc',
 		},
 		where?: SQL,
-	) {
+	) => {
 		const totalQtyColumn = sum(batchTable.qty);
 		const evaluatedOrderBy = createOrderByValue(orderBy, {
 			...getTableColumns(itemTable),
 			totalQty: totalQtyColumn,
 		});
 
-		return db
+		return client
 			.select({ ...getTableColumns(itemTable), totalQty: totalQtyColumn })
 			.from(itemTable)
 			.leftJoin(
@@ -166,7 +178,7 @@ export namespace StockService {
 			.orderBy(...evaluatedOrderBy)
 			.limit(limit)
 			.offset(offset);
-	}
+	},
 
 	/**
 	 * Searches for items by name without case sensitivity, with pagination support.
@@ -181,15 +193,16 @@ export namespace StockService {
 	 * @param orderBy the structure to order by, defaults to `'totalQty'`
 	 * @param where a where statement to include in the query
 	 */
-	export async function find(
+	find: async (
+		_,
 		query: string,
 		qtyType: BatchStatus,
 		limit: number,
 		offset?: number,
 		orderBy?: OrderByDefinition<Item & { totalQty: number }>,
-	) {
+	) => {
 		const queryTemplate = `%${query.toLowerCase()}%`;
-		return get(
+		return StockService.get(
 			qtyType,
 			limit,
 			offset,
@@ -199,20 +212,7 @@ export namespace StockService {
 				like(sql`LOWER(${itemTable.description})`, queryTemplate),
 			),
 		);
-	}
-
-	/**
-	 * Defines the order in which each consumption method needs
-	 * to retrieve batches in.
-	 */
-	const consumptionMethodOrders: Readonly<Record<ConsumptionMethod, OrderByDefinition<Batch>>> = {
-		[ConsumptionMethod.FIFO]: { key: 'receivedDate', dir: 'asc' },
-		[ConsumptionMethod.LIFO]: { key: 'receivedDate', dir: 'desc' },
-		[ConsumptionMethod.FEFO]: [
-			{ key: 'expiryDate', dir: 'asc' },
-			{ key: 'receivedDate', dir: 'asc' },
-		],
-	};
+	},
 
 	/**
 	 * Removes a specific amount of quantity from an item.
@@ -230,22 +230,23 @@ export namespace StockService {
 	 * @return the quantity that was not able to be removed, could be 0, or nothing if
 	 * removal was not possible
 	 */
-	export async function consume(
-		itemId: string,
-		quantity: number,
-		method = ConsumptionMethod.FIFO,
-	) {
+	consume: async (client, itemId: string, quantity: number, method = ConsumptionMethod.FIFO) => {
 		z.number().nonnegative().parse(quantity);
 
-		const item = await ItemService.getOne(itemId);
-		if (!item) return;
+		const itemRes = await ItemService.getOne(itemId);
+		if (!itemRes.success) throw itemRes.error;
 
-		return await db.transaction(async (tx) => {
-			const batches = await BatchService.getAllByItem(
+		const item = itemRes.data;
+
+		return await client.transaction(async (tx) => {
+			const batchesRes = await BatchService.$with(tx).getAllByItem(
 				item.id,
 				consumptionMethodOrders[method],
 				eq(batchTable.status, 'active'),
 			);
+
+			if (!batchesRes.success) throw batchesRes.error;
+			const batches = batchesRes.data;
 
 			let remaining = quantity;
 			for (const batch of batches) {
@@ -261,10 +262,10 @@ export namespace StockService {
 					batchUpdates.stockoutDate = new Date().toISOString();
 				}
 
-				await tx.update(batchTable).set(batchUpdates).where(eq(batchTable.id, batch.id));
+				await BatchService.$with(tx).update(batch.id, batchUpdates);
 			}
 
 			return remaining;
 		});
-	}
-}
+	},
+});
