@@ -1,6 +1,6 @@
 import { stringifyError } from './stringify-error';
 
-export type ServiceResult<T> = { success: true; data: T } | { success: false; error: string };
+export type ServiceResult<T> = [data: T, error: null] | [data: null, error: string];
 
 type UnwrapPromise<T> = T extends Promise<infer U> ? U : T;
 
@@ -41,9 +41,9 @@ export function createService<C extends unknown, A extends Actions<C>>(
 		return async (...args: Args): Promise<ServiceResult<R>> => {
 			try {
 				const data = await fn(client, ...args);
-				return { success: true, data };
+				return [data, null];
 			} catch (err) {
-				return { success: false, error: stringifyError(err) };
+				return [null, stringifyError(err)];
 			}
 		};
 	};

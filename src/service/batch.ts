@@ -20,10 +20,8 @@ export const BatchService = createService(db, {
 	 * @return the created batch, or nothing if the insert didn't occur
 	 */
 	insert: async (client, batch: z.infer<typeof insertBatchSchema>) => {
-		const itemRes = await ItemService.getOne(batch.itemId);
-		if (!itemRes.success) throw itemRes.error;
-
-		const item = itemRes.data;
+		const [item, err] = await ItemService.getOne(batch.itemId);
+		if (err !== null) throw err;
 
 		const [inserted] = await client
 			.insert(batchTable)

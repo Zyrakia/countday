@@ -91,14 +91,13 @@ export const StockService = createService(db, {
 	 * @return the item with it's total quantity calculated
 	 */
 	getWithQty: async (_, idOrFormId: string, qtyType?: BatchStatus) => {
-		const itemRes = await ItemService.getOne(idOrFormId);
-		if (!itemRes.success) throw itemRes.error;
+		const [item, itemServiceErr] = await ItemService.getOne(idOrFormId);
+		if (itemServiceErr !== null) throw itemServiceErr;
 
-		const item = itemRes.data;
-		const stockRes = await StockService.getItemStock(item.id, qtyType);
-		if (!stockRes.success) throw stockRes.error;
+		const [totalQty, stockServicErr] = await StockService.getItemStock(item.id, qtyType);
+		if (stockServicErr !== null) throw stockServicErr;
 
-		return { ...item, totalQty: stockRes.data };
+		return { ...item, totalQty };
 	},
 
 	/**
@@ -213,16 +212,22 @@ export const StockService = createService(db, {
 		orderBy?: OrderByDefinition<Item & { totalQty: number }>,
 	) => {
 		const queryTemplate = `%${query.toLowerCase()}%`;
-		return StockService.getItems(
-			qtyType,
-			limit,
-			offset,
-			orderBy,
-			or(
-				like(sql`LOWER(${itemTable.name})`, queryTemplate),
-				like(sql`LOWER(${itemTable.description})`, queryTemplate),
-			),
-		);
+
+		const [stock, err] = await (async () => {
+			return await StockService.getItems(
+				qtyType,
+				limit,
+				offset,
+				orderBy,
+				or(
+					like(sql`LOWER(${itemTable.name})`, queryTemplate),
+					like(sql`LOWER(${itemTable.description})`, queryTemplate),
+				),
+			);
+		})();
+
+		if (err !== null) throw err;
+		return stock;
 	},
 
 	/**
@@ -249,21 +254,18 @@ export const StockService = createService(db, {
 	) => {
 		z.number().nonnegative().parse(quantity);
 
-		const itemRes = await ItemService.getOne(itemId);
-		if (!itemRes.success) throw itemRes.error;
+		const [item, itemServiceErr] = await ItemService.getOne(itemId);
+		if (itemServiceErr !== null) throw itemServiceErr;
 
-		const item = itemRes.data;
-
-		const batchesRes = await BatchService.getAllByItem(
+		const [batches, batchServiceErr] = await BatchService.getAllByItem(
 			item.id,
 			consumptionMethodOrders[method],
 			eq(batchTable.status, 'active'),
 		);
 
-		return await client.transaction(async (tx) => {
-			if (!batchesRes.success) throw batchesRes.error;
-			const batches = batchesRes.data;
+		if (batchServiceErr !== null) throw batchServiceErr;
 
+		return await client.transaction(async (tx) => {
 			let remaining = quantity;
 			for (const batch of batches) {
 				if (remaining <= 0) break;
@@ -278,7 +280,8 @@ export const StockService = createService(db, {
 					batchUpdates.stockoutDate = new Date().toISOString();
 				}
 
-				await BatchService.$with(tx).update(batch.id, batchUpdates);
+				const [, err] = await BatchService.$with(tx).update(batch.id, batchUpdates);
+				if (err !== null) throw err;
 			}
 
 			return remaining;
@@ -296,16 +299,15 @@ export const StockService = createService(db, {
 	 */
 	receive: async (client, batch: z.infer<typeof insertBatchSchema>) => {
 		return await client.transaction(async (tx) => {
-			const insertedRes = await BatchService.$with(tx).insert(batch);
-			if (!insertedRes.success) throw insertedRes.error;
-			
-			const inserted = insertedRes.data;
+			const [inserted, batchServiceErr] = await BatchService.$with(tx).insert(batch);
+			if (batchServiceErr !== null) throw batchServiceErr;
 
-			await CountService.$with(tx).processDrift({
+			const [, err] = await CountService.$with(tx).processDrift({
 				itemId: inserted.itemId,
 				qtyChange: inserted.qty,
 			});
 
+			if (err !== null) throw err;
 			return inserted;
 		});
 	},

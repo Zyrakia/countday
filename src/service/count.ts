@@ -56,8 +56,11 @@ export const CountService = createService(db, {
 
 			if (!updated) throw `Unable to finish count by ID "${id}"`;
 
-			await StockService.$with(tx).reconcileCount(id);
-			await CountService.$with(tx).clearDrifts(updated.id);
+			let [, err] = await StockService.$with(tx).reconcileCount(id);
+			if (err !== null) throw err;
+
+			[, err] = await CountService.$with(tx).clearDrifts(updated.id);
+			if (err !== null) throw err;
 
 			return updated;
 		});
@@ -129,7 +132,12 @@ export const CountService = createService(db, {
 
 			if (!upserted) throw `Unable to process count of item with ID ${count.itemId}`;
 
-			await CountService.$with(tx).clearDrifts(upserted.countId, upserted.itemId);
+			const [, err] = await CountService.$with(tx).clearDrifts(
+				upserted.countId,
+				upserted.itemId,
+			);
+			if (err !== null) throw err;
+
 			return upserted;
 		});
 	},
@@ -199,10 +207,8 @@ export const CountService = createService(db, {
 	processDrift: async (client, drift: z.infer<typeof insertCountDriftSchema>) => {
 		if (drift.qtyChange === 0) return;
 
-		const affectedCountsRes = await CountService.getActiveCountsForItem(drift.itemId);
-		if (!affectedCountsRes.success) throw affectedCountsRes.error;
-
-		const affectedCounts = affectedCountsRes.data;
+		const [affectedCounts, err] = await CountService.getActiveCountsForItem(drift.itemId);
+		if (err !== null) throw err;
 
 		const driftDate = nowIso();
 		const rows = affectedCounts.map(

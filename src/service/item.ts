@@ -141,7 +141,7 @@ export const ItemService = createService(db, {
 	) => {
 		const queryTemplate = `%${query.toLowerCase()}%`;
 
-		return await ItemService.get(
+		const [items, err] = await ItemService.get(
 			limit,
 			offset,
 			orderBy,
@@ -150,5 +150,8 @@ export const ItemService = createService(db, {
 				like(sql`LOWER(${itemTable.description})`, queryTemplate),
 			),
 		);
+
+		if (err !== null) throw err;
+		return items;
 	},
 });
