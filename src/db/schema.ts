@@ -148,7 +148,10 @@ export const updateItemCountSchema = createUpdateSchema(itemCountTable).omit({
 });
 
 export const selectCountDriftSchema = createSelectSchema(countDriftTable);
-export const insertCountDriftSchema = createInsertSchema(countDriftTable).omit({ driftDate: true });
+export const insertCountDriftSchema = createInsertSchema(countDriftTable).omit({
+	driftDate: true,
+	countId: true,
+});
 export const updateCountDriftSchema = createUpdateSchema(countDriftTable).omit({
 	countId: true,
 	driftDate: true,

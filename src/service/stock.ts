@@ -2,12 +2,23 @@ import { and, asc, desc, eq, getTableColumns, like, or, sql, SQL, sum } from 'dr
 import { z } from 'zod';
 
 import { db } from '../db/db';
-import { Batch, BatchStatus, batchTable, Item, itemTable, updateBatchSchema } from '../db/schema';
+import {
+	Batch,
+	BatchStatus,
+	batchTable,
+	insertBatchSchema,
+	Item,
+	itemCountTable,
+	itemTable,
+	updateBatchSchema,
+} from '../db/schema';
 import { asNumber } from '../util/as-number';
 import { createOrderByValue, OrderByDefinition } from '../util/order-by-build';
 import { BatchService } from './batch';
 import { ItemService } from './item';
 import { createService } from '../util/create-service';
+import { nowIso } from '../util/time';
+import { CountService } from './count';
 
 export enum ConsumptionMethod {
 	/**
@@ -39,11 +50,11 @@ export enum ConsumptionMethod {
  * to retrieve batches in.
  */
 const consumptionMethodOrders: Readonly<Record<ConsumptionMethod, OrderByDefinition<Batch>>> = {
-	[ConsumptionMethod.FIFO]: { key: 'receivedDate', dir: 'asc' },
-	[ConsumptionMethod.LIFO]: { key: 'receivedDate', dir: 'desc' },
+	[ConsumptionMethod.FIFO]: { key: 'createdDate', dir: 'asc' },
+	[ConsumptionMethod.LIFO]: { key: 'createdDate', dir: 'desc' },
 	[ConsumptionMethod.FEFO]: [
 		{ key: 'expiryDate', dir: 'asc' },
-		{ key: 'receivedDate', dir: 'asc' },
+		{ key: 'createdDate', dir: 'asc' },
 	],
 };
 
@@ -123,13 +134,13 @@ export const StockService = createService(db, {
 				desc(whenStatus('expired', sql`${batchTable.expiryDate}`)),
 
 				// Active batches: oldest batches first
-				asc(whenStatus('active', sql`${batchTable.receivedDate}`)),
+				asc(whenStatus('active', sql`${batchTable.createdDate}`)),
 
 				// Archived batches: most recently stocked out first, else oldest first
 				desc(
 					whenStatus(
 						'archived',
-						sql`COALESCE(${batchTable.stockoutDate}, ${batchTable.receivedDate})`,
+						sql`COALESCE(${batchTable.stockoutDate}, ${batchTable.createdDate})`,
 					),
 				),
 			)
@@ -149,7 +160,7 @@ export const StockService = createService(db, {
 	 * @param orderBy the structure to order by, defaults to `'totalQty'`
 	 * @param where a where statement to include in the query
 	 */
-	get: async (
+	getItems: async (
 		client,
 		qtyType: BatchStatus,
 		limit: number,
@@ -193,7 +204,7 @@ export const StockService = createService(db, {
 	 * @param orderBy the structure to order by, defaults to `'totalQty'`
 	 * @param where a where statement to include in the query
 	 */
-	find: async (
+	findItems: async (
 		_,
 		query: string,
 		qtyType: BatchStatus,
@@ -202,7 +213,7 @@ export const StockService = createService(db, {
 		orderBy?: OrderByDefinition<Item & { totalQty: number }>,
 	) => {
 		const queryTemplate = `%${query.toLowerCase()}%`;
-		return StockService.get(
+		return StockService.getItems(
 			qtyType,
 			limit,
 			offset,
@@ -230,7 +241,12 @@ export const StockService = createService(db, {
 	 * @return the quantity that was not able to be removed, could be 0, or nothing if
 	 * removal was not possible
 	 */
-	consume: async (client, itemId: string, quantity: number, method = ConsumptionMethod.FIFO) => {
+	consume: async (
+		client,
+		itemId: string,
+		quantity: number,
+		method: ConsumptionMethod = ConsumptionMethod.FIFO,
+	) => {
 		z.number().nonnegative().parse(quantity);
 
 		const itemRes = await ItemService.getOne(itemId);
@@ -238,13 +254,13 @@ export const StockService = createService(db, {
 
 		const item = itemRes.data;
 
-		return await client.transaction(async (tx) => {
-			const batchesRes = await BatchService.$with(tx).getAllByItem(
-				item.id,
-				consumptionMethodOrders[method],
-				eq(batchTable.status, 'active'),
-			);
+		const batchesRes = await BatchService.getAllByItem(
+			item.id,
+			consumptionMethodOrders[method],
+			eq(batchTable.status, 'active'),
+		);
 
+		return await client.transaction(async (tx) => {
 			if (!batchesRes.success) throw batchesRes.error;
 			const batches = batchesRes.data;
 
@@ -256,7 +272,7 @@ export const StockService = createService(db, {
 				const newQty = batch.qty - qtyToRemove;
 				remaining -= qtyToRemove;
 
-				const batchUpdates: Partial<z.infer<typeof updateBatchSchema>> = { qty: newQty };
+				const batchUpdates: Partial<Batch> = { qty: newQty };
 				if (newQty === 0) {
 					batchUpdates.status = 'archived';
 					batchUpdates.stockoutDate = new Date().toISOString();
@@ -267,5 +283,43 @@ export const StockService = createService(db, {
 
 			return remaining;
 		});
+	},
+
+	/**
+	 * Creates a new batch.
+	 *
+	 * This will create drift for any active counts that have
+	 * already counted the affected item.
+	 *
+	 * @param batch the properties of the batch to create
+	 * @return the created batch, if creation was successful
+	 */
+	receive: async (client, batch: z.infer<typeof insertBatchSchema>) => {
+		return await client.transaction(async (tx) => {
+			const insertedRes = await BatchService.$with(tx).insert(batch);
+			if (!insertedRes.success) throw insertedRes.error;
+			
+			const inserted = insertedRes.data;
+
+			await CountService.$with(tx).processDrift({
+				itemId: inserted.itemId,
+				qtyChange: inserted.qty,
+			});
+
+			return inserted;
+		});
+	},
+
+	reconcileCount: async (client, countId: string) => {
+		const counts = await client
+			.select()
+			.from(itemCountTable)
+			.where(eq(itemCountTable.countId, countId));
+
+		const reconciliations = counts.map(async (count) => {
+			// TODO
+		});
+
+		await Promise.all(reconciliations);
 	},
 });

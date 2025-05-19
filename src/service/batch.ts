@@ -5,7 +5,7 @@ import { Batch, batchTable, insertBatchSchema, updateBatchSchema } from '../db/s
 import { createOrderByValue, OrderByDefinition } from '../util/order-by-build';
 import { z } from 'zod';
 import { ItemService } from './item';
-import { nowIso } from '../util/now';
+import { nowIso } from '../util/time';
 import { createService } from '../util/create-service';
 
 /**
@@ -98,7 +98,7 @@ export const BatchService = createService(db, {
 			.select()
 			.from(batchTable)
 			.where(and(eq(batchTable.itemId, itemId), where))
-			.orderBy(...(orderBy ? createOrderByValue(orderBy, batchTable) : []));
+			.orderBy(...createOrderByValue(orderBy ?? [], batchTable));
 	},
 
 	/**
