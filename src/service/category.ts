@@ -3,14 +3,10 @@ import { z } from 'zod';
 
 import { db } from '../db/db';
 import {
-	Category,
-	categoryTable,
-	insertCategorySchema,
-	itemTable,
-	updateCategorySchema,
+    Category, categoryTable, insertCategorySchema, itemTable, updateCategorySchema
 } from '../db/schema';
-import { createOrderByValue, OrderByDefinition } from '../util/order-by-build';
 import { createService } from '../util/create-service';
+import { createOrderByValue, OrderByDefinition } from '../util/order-by-build';
 
 /**
  * Responsible for category CRUD logic.

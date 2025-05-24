@@ -3,15 +3,10 @@ import { z } from 'zod';
 
 import { db } from '../db/db';
 import {
-	batchTable,
-	insertItemSchema,
-	Item,
-	itemFormTable,
-	itemTable,
-	updateItemSchema,
+    batchTable, insertItemSchema, Item, itemFormTable, itemTable, updateItemSchema
 } from '../db/schema';
-import { createOrderByValue, OrderByDefinition } from '../util/order-by-build';
 import { createService } from '../util/create-service';
+import { createOrderByValue, OrderByDefinition } from '../util/order-by-build';
 
 /**
  * Responsible for item CRUD logic.

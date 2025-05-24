@@ -1,35 +1,18 @@
 import {
-	and,
-	asc,
-	desc,
-	eq,
-	getTableColumns,
-	like,
-	notInArray,
-	or,
-	sql,
-	SQL,
-	sum,
+    and, asc, desc, eq, getTableColumns, like, notInArray, or, sql, SQL, sum
 } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { db } from '../db/db';
 import {
-	Batch,
-	BatchStatus,
-	batchTable,
-	insertBatchSchema,
-	Item,
-	itemCountTable,
-	itemTable,
-	updateBatchSchema,
+    Batch, BatchStatus, batchTable, insertBatchSchema, Item, itemCountTable, itemTable
 } from '../db/schema';
 import { asNumber } from '../util/as-number';
+import { createService } from '../util/create-service';
 import { createOrderByValue, OrderByDefinition } from '../util/order-by-build';
 import { BatchService } from './batch';
-import { ItemService } from './item';
-import { createService } from '../util/create-service';
 import { CountService } from './count';
+import { ItemService } from './item';
 
 export enum ConsumptionMethod {
 	/**

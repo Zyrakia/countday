@@ -3,15 +3,10 @@ import { z } from 'zod';
 
 import { db } from '../db/db';
 import {
-	batchTable,
-	insertSupplierSchema,
-	itemTable,
-	Supplier,
-	supplierTable,
-	updateSupplierSchema,
+    batchTable, insertSupplierSchema, itemTable, Supplier, supplierTable, updateSupplierSchema
 } from '../db/schema';
-import { createOrderByValue, OrderByDefinition } from '../util/order-by-build';
 import { createService } from '../util/create-service';
+import { createOrderByValue, OrderByDefinition } from '../util/order-by-build';
 
 /**
  * Responsible for supplier CRUD logic.
