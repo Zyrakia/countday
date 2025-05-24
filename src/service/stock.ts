@@ -1,4 +1,16 @@
-import { and, asc, desc, eq, getTableColumns, like, or, sql, SQL, sum } from 'drizzle-orm';
+import {
+	and,
+	asc,
+	desc,
+	eq,
+	getTableColumns,
+	like,
+	notInArray,
+	or,
+	sql,
+	SQL,
+	sum,
+} from 'drizzle-orm';
 import { z } from 'zod';
 
 import { db } from '../db/db';
@@ -17,7 +29,6 @@ import { createOrderByValue, OrderByDefinition } from '../util/order-by-build';
 import { BatchService } from './batch';
 import { ItemService } from './item';
 import { createService } from '../util/create-service';
-import { nowIso } from '../util/time';
 import { CountService } from './count';
 
 export enum ConsumptionMethod {
@@ -72,13 +83,14 @@ export const StockService = createService(db, {
 	 *
 	 * @param id the ID of the item
 	 * @param qtyType the type of quantity to calculate, defaults to `active`
+	 * @param wher a where statement to include when counting batches
 	 * @return the total quantity the item has, or 0 by default
 	 */
-	getItemStock: async (client, id: string, qtyType: BatchStatus = 'active') => {
+	getItemQty: async (client, id: string, qtyType: BatchStatus = 'active', where?: SQL) => {
 		const [{ qty }] = await client
 			.select({ qty: sum(batchTable.qty) })
 			.from(batchTable)
-			.where(and(eq(batchTable.itemId, id), eq(batchTable.status, 'active')));
+			.where(and(eq(batchTable.itemId, id), eq(batchTable.status, qtyType), where));
 
 		return asNumber(qty, 0);
 	},
@@ -90,12 +102,12 @@ export const StockService = createService(db, {
 	 * @param qtyType the type of quantity to calculate, defaults to `active`
 	 * @return the item with it's total quantity calculated
 	 */
-	getWithQty: async (_, idOrFormId: string, qtyType?: BatchStatus) => {
-		const [item, itemServiceErr] = await ItemService.getOne(idOrFormId);
+	getItemWithQty: async (client, idOrFormId: string, qtyType?: BatchStatus) => {
+		const [item, itemServiceErr] = await ItemService.$with(client).getOne(idOrFormId);
 		if (itemServiceErr !== null) throw itemServiceErr;
 
-		const [totalQty, stockServicErr] = await StockService.getItemStock(item.id, qtyType);
-		if (stockServicErr !== null) throw stockServicErr;
+		const [totalQty, qtyErr] = await StockService.$with(client).getItemQty(item.id, qtyType);
+		if (qtyErr !== null) throw qtyErr;
 
 		return { ...item, totalQty };
 	},
@@ -204,7 +216,7 @@ export const StockService = createService(db, {
 	 * @param where a where statement to include in the query
 	 */
 	findItems: async (
-		_,
+		client,
 		query: string,
 		qtyType: BatchStatus,
 		limit: number,
@@ -213,18 +225,16 @@ export const StockService = createService(db, {
 	) => {
 		const queryTemplate = `%${query.toLowerCase()}%`;
 
-		const [stock, err] = await (async () => {
-			return await StockService.getItems(
-				qtyType,
-				limit,
-				offset,
-				orderBy,
-				or(
-					like(sql`LOWER(${itemTable.name})`, queryTemplate),
-					like(sql`LOWER(${itemTable.description})`, queryTemplate),
-				),
-			);
-		})();
+		const [stock, err] = await StockService.$with(client).getItems(
+			qtyType,
+			limit,
+			offset,
+			orderBy,
+			or(
+				like(sql`LOWER(${itemTable.name})`, queryTemplate),
+				like(sql`LOWER(${itemTable.description})`, queryTemplate),
+			),
+		);
 
 		if (err !== null) throw err;
 		return stock;
@@ -243,6 +253,7 @@ export const StockService = createService(db, {
 	 * @param itemId the ID of the item to remove from
 	 * @param quantity the amount of quantity to remove
 	 * @param method the method in which to consume the quantity, default {@link ConsumptionMethod.FIFO}
+	 * @param where an additional where statement to include when fetching batches
 	 * @return the quantity that was not able to be removed, could be 0, or nothing if
 	 * removal was not possible
 	 */
@@ -251,16 +262,17 @@ export const StockService = createService(db, {
 		itemId: string,
 		quantity: number,
 		method: ConsumptionMethod = ConsumptionMethod.FIFO,
+		where?: SQL,
 	) => {
 		z.number().nonnegative().parse(quantity);
 
-		const [item, itemServiceErr] = await ItemService.getOne(itemId);
+		const [item, itemServiceErr] = await ItemService.$with(client).getOne(itemId);
 		if (itemServiceErr !== null) throw itemServiceErr;
 
-		const [batches, batchServiceErr] = await BatchService.getAllByItem(
+		const [batches, batchServiceErr] = await BatchService.$with(client).getAllByItem(
 			item.id,
 			consumptionMethodOrders[method],
-			eq(batchTable.status, 'active'),
+			and(eq(batchTable.status, 'active'), where),
 		);
 
 		if (batchServiceErr !== null) throw batchServiceErr;
@@ -312,16 +324,75 @@ export const StockService = createService(db, {
 		});
 	},
 
+	/**
+	 * Reconciles a completed inventory count session by adjusting batch quantities
+	 * and creating new batches for discrepancies.
+	 *
+	 * @param countId the ID of the count session to reconcile
+	 */
 	reconcileCount: async (client, countId: string) => {
-		const counts = await client
-			.select()
-			.from(itemCountTable)
-			.where(eq(itemCountTable.countId, countId));
+		await client.transaction(async (tx) => {
+			const counts = await tx
+				.select()
+				.from(itemCountTable)
+				.where(eq(itemCountTable.countId, countId));
 
-		const reconciliations = counts.map(async (count) => {
-			// TODO
+			const genericAdjustments = [];
+			const batchAdjustments = [];
+
+			for (const count of counts) {
+				if (count.batchId) batchAdjustments.push(count);
+				else genericAdjustments.push(count);
+			}
+
+			const batchAdjustmentIds = batchAdjustments.map(({ batchId }) => batchId!);
+			const excludeAdjustedBatches = notInArray(batchTable.id, batchAdjustmentIds);
+
+			await Promise.all(
+				genericAdjustments.map(async (count) => {
+					const [currentQty, itemQtyErr] = await StockService.$with(tx).getItemQty(
+						count.itemId,
+						'active',
+						excludeAdjustedBatches,
+					);
+					if (itemQtyErr !== null) throw itemQtyErr;
+
+					const offsetQty = count.countedQty - currentQty;
+
+					if (offsetQty === 0) return;
+
+					if (offsetQty < 0) {
+						const [uncomsumedQty, consumeErr] = await StockService.$with(tx).consume(
+							count.itemId,
+							Math.abs(offsetQty),
+							undefined,
+							excludeAdjustedBatches,
+						);
+
+						if (consumeErr !== null) throw consumeErr;
+
+						if (uncomsumedQty !== 0)
+							throw `${uncomsumedQty} remaining quantity could not be removed from ${count.itemId} during count reconciliation.`;
+					} else {
+						await StockService.$with(tx).receive({
+							itemId: count.itemId,
+							qty: offsetQty,
+						});
+					}
+				}),
+			);
+
+			await Promise.all(
+				batchAdjustments.map(async (count) => {
+					if (!count.batchId) return;
+
+					const isDepleted = count.countedQty === 0;
+					await BatchService.$with(tx).update(count.batchId, {
+						qty: count.countedQty,
+						status: isDepleted ? 'archived' : 'active',
+					});
+				}),
+			);
 		});
-
-		await Promise.all(reconciliations);
 	},
 });
