@@ -133,7 +133,7 @@ export const ItemService = createService(db, {
 	 * @return an array of items matching the query input
 	 */
 	find: async (
-		_,
+		client,
 		query: string,
 		limit: number,
 		offset?: number,
@@ -141,7 +141,7 @@ export const ItemService = createService(db, {
 	) => {
 		const queryTemplate = `%${query.toLowerCase()}%`;
 
-		const [items, err] = await ItemService.get(
+		const [items, err] = await ItemService.$with(client).get(
 			limit,
 			offset,
 			orderBy,

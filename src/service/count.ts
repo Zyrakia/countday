@@ -207,7 +207,9 @@ export const CountService = createService(db, {
 	processDrift: async (client, drift: z.infer<typeof insertCountDriftSchema>) => {
 		if (drift.qtyChange === 0) return;
 
-		const [affectedCounts, err] = await CountService.getActiveCountsForItem(drift.itemId);
+		const [affectedCounts, err] = await CountService.$with(client).getActiveCountsForItem(
+			drift.itemId,
+		);
 		if (err !== null) throw err;
 
 		const driftDate = nowIso();
