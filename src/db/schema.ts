@@ -126,7 +126,10 @@ export const updateItemSchema = createUpdateSchema(itemTable).omit({ id: true })
 
 export const selectItemFormSchema = createSelectSchema(itemFormTable);
 export const insertItemFormSchema = createInsertSchema(itemFormTable);
-export const updateItemFormSchema = createUpdateSchema(itemFormTable);
+export const updateItemFormSchema = createUpdateSchema(itemFormTable).omit({
+	id: true,
+	itemId: true,
+});
 
 export const selectBatchSchema = createSelectSchema(batchTable);
 export const insertBatchSchema = createInsertSchema(batchTable, {

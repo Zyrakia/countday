@@ -3,7 +3,12 @@ import { z } from 'zod';
 
 import { db } from '../db/db';
 import {
-    batchTable, insertLocationSchema, itemTable, Location, locationTable, updateLocationSchema
+	batchTable,
+	insertLocationSchema,
+	itemTable,
+	Location,
+	locationTable,
+	updateLocationSchema,
 } from '../db/schema';
 import { createService } from '../util/create-service';
 import { createOrderByValue, OrderByDefinition } from '../util/order-by-build';
@@ -16,7 +21,7 @@ export const LocationService = createService(db, {
 	 * Creates a new location.
 	 *
 	 * @param location the properties of the location
-	 * @return the created location, or nothing if the insert didn't occur
+	 * @return the created location
 	 */
 	insert: async (client, location: z.infer<typeof insertLocationSchema>) => {
 		const [inserted] = await client.insert(locationTable).values(location).returning();
@@ -29,7 +34,7 @@ export const LocationService = createService(db, {
 	 *
 	 * @param id the ID of the location to update
 	 * @param partial the properties to update on the location
-	 * @return the updated location, or nothing if the update didn't occur
+	 * @return the updated location
 	 */
 	update: async (client, id: string, partial: z.infer<typeof updateLocationSchema>) => {
 		const [updated] = await client
@@ -49,7 +54,7 @@ export const LocationService = createService(db, {
 	 * this location.
 	 *
 	 * @param id the ID of the location to delete
-	 * @return the deleted location, or nothing if the deletion didn't occur
+	 * @return the deleted location
 	 */
 	remove: async (client, id: string) => {
 		const [deleted] = await client

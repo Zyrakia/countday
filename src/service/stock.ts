@@ -1,11 +1,27 @@
 import {
-    and, asc, desc, eq, getTableColumns, like, notInArray, or, sql, SQL, sum
+	and,
+	asc,
+	desc,
+	eq,
+	getTableColumns,
+	like,
+	notInArray,
+	or,
+	sql,
+	SQL,
+	sum,
 } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { db } from '../db/db';
 import {
-    Batch, BatchStatus, batchTable, insertBatchSchema, Item, itemCountTable, itemTable
+	Batch,
+	BatchStatus,
+	batchTable,
+	insertBatchSchema,
+	Item,
+	itemCountTable,
+	itemTable,
 } from '../db/schema';
 import { asNumber } from '../util/as-number';
 import { createService } from '../util/create-service';
@@ -237,8 +253,7 @@ export const StockService = createService(db, {
 	 * @param quantity the amount of quantity to remove
 	 * @param method the method in which to consume the quantity, default {@link ConsumptionMethod.FIFO}
 	 * @param where an additional where statement to include when fetching batches
-	 * @return the quantity that was not able to be removed, could be 0, or nothing if
-	 * removal was not possible
+	 * @return the quantity that was not able to be removed, could be 0
 	 */
 	consume: async (
 		client,
@@ -310,6 +325,18 @@ export const StockService = createService(db, {
 	/**
 	 * Reconciles a completed inventory count session by adjusting batch quantities
 	 * and creating new batches for discrepancies.
+	 *
+	 * The reconciliation process prioritizes explicit batch counts:
+	 * 1.  **Specific Batch Counts:** Any `itemCount` entries with an associated `batchId` are processed first.
+	 *     The quantity of these specific batches is directly updated to the `countedQty`.
+	 *     If a batch's `countedQty` becomes zero, its status is changed to 'archived'.
+	 * 2.  **Generic Item Counts:** For `itemCount` entries *without* a `batchId`, the system calculates the
+	 *     difference between the `countedQty` and the *remaining active stock* of that item
+	 *     (i.e., stock from batches *not* explicitly counted in this reconciliation).
+	 *     *   If `countedQty` is less than the remaining stock, the difference is consumed from the
+	 *         remaining batches using the default consumption method.
+	 *     *   If `countedQty` is greater than the remaining stock, a new batch is created for the
+	 *         difference, representing newly 'found' or unclassified stock for the item.
 	 *
 	 * @param countId the ID of the count session to reconcile
 	 */

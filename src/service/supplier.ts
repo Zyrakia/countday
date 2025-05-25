@@ -3,7 +3,12 @@ import { z } from 'zod';
 
 import { db } from '../db/db';
 import {
-    batchTable, insertSupplierSchema, itemTable, Supplier, supplierTable, updateSupplierSchema
+	batchTable,
+	insertSupplierSchema,
+	itemTable,
+	Supplier,
+	supplierTable,
+	updateSupplierSchema,
 } from '../db/schema';
 import { createService } from '../util/create-service';
 import { createOrderByValue, OrderByDefinition } from '../util/order-by-build';
@@ -16,7 +21,7 @@ export const SupplierService = createService(db, {
 	 * Creates a new supplier.
 	 *
 	 * @param supplier the properties of the supplier
-	 * @return the created supplier, or nothing if the insert didn't occur
+	 * @return the created supplier
 	 */
 	insert: async (client, supplier: z.infer<typeof insertSupplierSchema>) => {
 		const [inserted] = await client.insert(supplierTable).values(supplier).returning();
@@ -29,7 +34,7 @@ export const SupplierService = createService(db, {
 	 *
 	 * @param id the ID of the supplier to update
 	 * @param partial the properties to update on the supplier
-	 * @return the updated supplier, or nothing if the update didn't occur
+	 * @return the updated supplier
 	 */
 	update: async (client, id: string, partial: z.infer<typeof updateSupplierSchema>) => {
 		const [updated] = await client
@@ -49,7 +54,7 @@ export const SupplierService = createService(db, {
 	 * this supplier.
 	 *
 	 * @param id the ID of the supplier to delete
-	 * @return the deleted supplier, or nothing if the deletion didn't occur
+	 * @return the deleted supplier
 	 */
 	remove: async (client, id: string) => {
 		const [deleted] = await client

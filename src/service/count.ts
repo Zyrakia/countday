@@ -3,8 +3,15 @@ import { z } from 'zod';
 
 import { db } from '../db/db';
 import {
-    Count, CountDrift, countDriftTable, countTable, insertCountDriftSchema, insertItemCountSchema,
-    Item, itemCountTable, itemTable
+	Count,
+	CountDrift,
+	countDriftTable,
+	countTable,
+	insertCountDriftSchema,
+	insertItemCountSchema,
+	Item,
+	itemCountTable,
+	itemTable,
 } from '../db/schema';
 import { asNumber } from '../util/as-number';
 import { createService } from '../util/create-service';
@@ -21,7 +28,7 @@ export const CountService = createService(db, {
 	/**
 	 * Creates a new count.
 	 *
-	 * @return the inserted count, or nothing if the insertion didn't occur
+	 * @return the inserted count
 	 */
 	start: async (client) => {
 		const [created] = await client
@@ -38,7 +45,7 @@ export const CountService = createService(db, {
 	 * that the count has made.
 	 *
 	 * @param id the ID of the count to finish
-	 * @return the finished count, or nothing if the count could not be found, or was already finished
+	 * @return the finished count
 	 */
 	finish: async (client, id: string) => {
 		return await client.transaction(async (tx) => {
@@ -64,7 +71,7 @@ export const CountService = createService(db, {
 	 * Deletes a count.
 	 *
 	 * @param id the ID of the count to delete
-	 * @return the deleted count, or nothing if the deletion didn't occur
+	 * @return the deleted count
 	 */
 	remove: async (client, id: string) => {
 		const [deleted] = await client.delete(countTable).where(eq(countTable.id, id)).returning();

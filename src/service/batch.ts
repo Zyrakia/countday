@@ -17,7 +17,7 @@ export const BatchService = createService(db, {
 	 * Creates a new batch.
 	 *
 	 * @param batch the properties of the batch
-	 * @return the created batch, or nothing if the insert didn't occur
+	 * @return the created batch
 	 */
 	insert: async (client, batch: z.infer<typeof insertBatchSchema>) => {
 		const [item, err] = await ItemService.$with(client).getOne(batch.itemId);
@@ -42,7 +42,7 @@ export const BatchService = createService(db, {
 	 *
 	 * @param id the ID of the batch to update
 	 * @param partial the values to update on the batch
-	 * @return the updated batch, or nothing if the update didn't occur
+	 * @return the updated batch
 	 */
 	update: async (client, id: string, partial: z.infer<typeof updateBatchSchema>) => {
 		const [updated] = await client
@@ -59,7 +59,7 @@ export const BatchService = createService(db, {
 	 * Removes a batch by ID.
 	 *
 	 * @param id the ID of the batch to remove
-	 * @return the deleted batch, or nothing if the deletion didn't occur
+	 * @return the deleted batch
 	 */
 	remove: async (client, id: string) => {
 		const [deleted] = await client.delete(batchTable).where(eq(batchTable.id, id)).returning();
@@ -71,7 +71,7 @@ export const BatchService = createService(db, {
 	 * Returns a batch by ID.
 	 *
 	 * @param id the ID of the batch to retrieve
-	 * @return the batch, or nothing if the ID is invalid
+	 * @return the batch
 	 */
 	getOne: async (client, id: string) => {
 		return await client.query.batchTable.findFirst({

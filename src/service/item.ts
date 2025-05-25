@@ -3,7 +3,12 @@ import { z } from 'zod';
 
 import { db } from '../db/db';
 import {
-    batchTable, insertItemSchema, Item, itemFormTable, itemTable, updateItemSchema
+	batchTable,
+	insertItemSchema,
+	Item,
+	itemFormTable,
+	itemTable,
+	updateItemSchema,
 } from '../db/schema';
 import { createService } from '../util/create-service';
 import { createOrderByValue, OrderByDefinition } from '../util/order-by-build';
@@ -16,7 +21,7 @@ export const ItemService = createService(db, {
 	 * Creates a new item.
 	 *
 	 * @param item the properties of the item
-	 * @return the created item, or nothing if the insert didn't occur
+	 * @return the created item
 	 */
 	insert: async (client, item: z.infer<typeof insertItemSchema>) => {
 		const [inserted] = await client.insert(itemTable).values(item).returning();
@@ -29,7 +34,7 @@ export const ItemService = createService(db, {
 	 *
 	 * @param id the ID of the item to update
 	 * @param partial the properties to update on the item
-	 * @return the updated item, or nothing if the update didn't occur
+	 * @return the updated item
 	 */
 	update: async (client, id: string, partial: z.infer<typeof updateItemSchema>) => {
 		const [updated] = await client
@@ -48,7 +53,7 @@ export const ItemService = createService(db, {
 	 * This will delete the item, all associated batches or counts.
 	 *
 	 * @param id the ID of the item to delete
-	 * @return the deleted item, or nothing if the deletion didn't occur
+	 * @return the deleted item
 	 */
 	remove: async (client, id: string) => {
 		const [deleted] = await client.delete(itemTable).where(eq(itemTable.id, id)).returning();

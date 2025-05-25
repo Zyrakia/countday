@@ -3,7 +3,11 @@ import { z } from 'zod';
 
 import { db } from '../db/db';
 import {
-    Category, categoryTable, insertCategorySchema, itemTable, updateCategorySchema
+	Category,
+	categoryTable,
+	insertCategorySchema,
+	itemTable,
+	updateCategorySchema,
 } from '../db/schema';
 import { createService } from '../util/create-service';
 import { createOrderByValue, OrderByDefinition } from '../util/order-by-build';
@@ -16,7 +20,7 @@ export const CategoryService = createService(db, {
 	 * Creates a new category.
 	 *
 	 * @param category the properties of the category
-	 * @return the created category, or nothing if the insert didn't occur
+	 * @return the created category
 	 */
 	insert: async (client, category: z.infer<typeof insertCategorySchema>) => {
 		const [inserted] = await client.insert(categoryTable).values(category).returning();
@@ -29,7 +33,7 @@ export const CategoryService = createService(db, {
 	 *
 	 * @param id the ID of the category to update
 	 * @param partial the properties to update on the category
-	 * @return the updated category, or nothing if the update didn't occur
+	 * @return the updated category
 	 */
 	update: async (client, id: string, partial: z.infer<typeof updateCategorySchema>) => {
 		const [updated] = await client
@@ -49,7 +53,7 @@ export const CategoryService = createService(db, {
 	 * this category.
 	 *
 	 * @param id the ID of the category to delete
-	 * @return the deleted category, or nothing if the deletion didn't occur
+	 * @return the deleted category
 	 */
 	remove: async (client, id: string) => {
 		const [deleted] = await client
