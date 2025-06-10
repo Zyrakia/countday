@@ -50,7 +50,7 @@ export const itemFormTable = sqliteTable('item_form', {
 	qtyMultiplier: real().notNull(),
 });
 
-const batchStatusValues = ['active', 'archived', 'expired'] as const;
+export const batchStatusValues = ['active', 'archived', 'expired'] as const;
 export type BatchStatus = (typeof batchStatusValues)[number];
 
 export const batchTable = sqliteTable('batch', {

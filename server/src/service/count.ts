@@ -1,4 +1,4 @@
-import { and, count, countDistinct, eq, sql, SQL } from 'drizzle-orm';
+import { and, count, countDistinct, eq, getTableColumns, sql, SQL } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { db } from '../db/db';
@@ -18,6 +18,7 @@ import { createService } from '../util/create-service';
 import { createOrderByValue, OrderByDefinition } from '../util/order-by-build';
 import { nowIso } from '../util/time';
 import { StockService } from './stock';
+import { ItemService } from './item';
 
 type ItemCountStaus = 'counted' | 'uncounted' | 'drifted';
 
@@ -31,10 +32,7 @@ export const CountService = createService(db, {
 	 * @return the inserted count
 	 */
 	start: async (client) => {
-		const [created] = await client
-			.insert(countTable)
-			.values({ startedDate: nowIso() })
-			.returning();
+		const [created] = await client.insert(countTable).values({ startedDate: nowIso() }).returning();
 
 		if (!created) throw `Unknown error while starting count`;
 		return created;
@@ -133,10 +131,7 @@ export const CountService = createService(db, {
 
 			if (!upserted) throw `Unable to process count of item with ID ${count.itemId}`;
 
-			const [, err] = await CountService.$with(tx).clearDrifts(
-				upserted.countId,
-				upserted.itemId,
-			);
+			const [, err] = await CountService.$with(tx).clearDrifts(upserted.countId, upserted.itemId);
 			if (err !== null) throw err;
 
 			return upserted;
@@ -151,10 +146,7 @@ export const CountService = createService(db, {
 	 * @return the drifts that affect the count
 	 */
 	getDrifts: async (client, countId: string) => {
-		return await client
-			.select()
-			.from(countDriftTable)
-			.where(eq(countDriftTable.countId, countId));
+		return await client.select().from(countDriftTable).where(eq(countDriftTable.countId, countId));
 	},
 
 	/**
@@ -208,9 +200,7 @@ export const CountService = createService(db, {
 	processDrift: async (client, drift: z.infer<typeof insertCountDriftSchema>) => {
 		if (drift.qtyChange === 0) return;
 
-		const [affectedCounts, err] = await CountService.$with(client).getActiveCountsForItem(
-			drift.itemId,
-		);
+		const [affectedCounts, err] = await CountService.$with(client).getActiveCountsForItem(drift.itemId);
 		if (err !== null) throw err;
 
 		const driftDate = nowIso();
@@ -262,7 +252,7 @@ export const CountService = createService(db, {
 	 *
 	 * @param id the ID of the count to get items for
 	 * @param limit the maximum amount of items to get
-	 * @param offset the amount of rows to skip
+	 * @param offset the amount of rows to skip, default `0`
 	 * @param orderBy the structure to order the result by, default `'countStatus'`
 	 * @param where a where clause to include in the query
 	 */
@@ -270,7 +260,7 @@ export const CountService = createService(db, {
 		client,
 		id: string,
 		limit: number,
-		offset?: number,
+		offset = 0,
 		orderBy: OrderByDefinition<Item & { countStatus: ItemCountStaus }> = 'countStatus',
 		where?: SQL,
 	) => {},

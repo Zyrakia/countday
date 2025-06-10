@@ -1,6 +1,7 @@
 import { AnyColumn, asc, desc, SQLWrapper } from 'drizzle-orm';
 
 import { asArray } from './as-array';
+import { z } from 'zod';
 
 type ArrayOrSingle<T> = T | T[];
 
