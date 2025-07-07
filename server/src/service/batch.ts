@@ -86,12 +86,7 @@ export const BatchService = createService(db, {
 	 * @param orderBy the structure to order by
 	 * @param where a where statement to include in the query
 	 */
-	getAllByItem: async (
-		client,
-		itemId: string,
-		orderBy?: OrderByDefinition<Batch>,
-		where?: SQL,
-	) => {
+	_getAllByItem: async (client, itemId: string, orderBy?: OrderByDefinition<Batch>, where?: SQL) => {
 		return await client
 			.select()
 			.from(batchTable)

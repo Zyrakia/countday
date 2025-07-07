@@ -3,7 +3,7 @@ import { z } from 'zod';
 /**
  * Default schema for page size limit for all pagination routes.
  */
-export const paginationLimit = z.number().min(0).max(50).default(10);
+export const paginationLimit = z.number().min(1).max(50).default(10);
 
 /**
  * Default schema for page start offset for all pagination routes.

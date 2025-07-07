@@ -2,9 +2,8 @@ import { z } from 'zod';
 import { batchStatusValues, batchTable, insertBatchSchema, updateBatchSchema } from '../db/schema';
 import { BatchService } from '../service/batch';
 import { publicProcedure, router } from '../trpc';
-import { paginationLimit, paginationOffset } from './input-helpers';
-import { orderBySchema } from '../util/order-by-build';
-import { getTableColumns } from 'drizzle-orm';
+import { orderBySchema, paginationLimit, paginationOffset } from './input-helpers';
+import { eq, getTableColumns } from 'drizzle-orm';
 
 export const batchRouter = router({
 	insert: publicProcedure.input(insertBatchSchema).mutation(async ({ input }) => {
@@ -38,6 +37,15 @@ export const batchRouter = router({
 			}),
 		)
 		.query(async ({ input }) => {
-            const [batches, err] = await BatchService.getByItem(input.itemId)
-        }),
+			const [batches, err] = await BatchService.getByItem(
+				input.itemId,
+				input.limit,
+				input.offset,
+				input.orderBy,
+				eq(batchTable.status, input.targetStatus),
+			);
+
+			if (err) throw new Error('Failed to obtain batches.', { cause: err });
+			return batches;
+		}),
 });

@@ -1,16 +1,4 @@
-import {
-	and,
-	asc,
-	desc,
-	eq,
-	getTableColumns,
-	like,
-	notInArray,
-	or,
-	sql,
-	SQL,
-	sum,
-} from 'drizzle-orm';
+import { and, asc, desc, eq, getTableColumns, like, notInArray, or, sql, SQL, sum } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { db } from '../db/db';
@@ -190,10 +178,7 @@ export const StockService = createService(db, {
 		return client
 			.select({ ...getTableColumns(itemTable), totalQty: totalQtyColumn })
 			.from(itemTable)
-			.leftJoin(
-				batchTable,
-				and(eq(batchTable.itemId, itemTable.id), eq(batchTable.status, qtyType)),
-			)
+			.leftJoin(batchTable, and(eq(batchTable.itemId, itemTable.id), eq(batchTable.status, qtyType)))
 			.where(where)
 			.groupBy(itemTable.id)
 			.orderBy(...evaluatedOrderBy)
@@ -267,7 +252,7 @@ export const StockService = createService(db, {
 		const [item, itemServiceErr] = await ItemService.$with(client).getOne(itemId);
 		if (itemServiceErr !== null) throw itemServiceErr;
 
-		const [batches, batchServiceErr] = await BatchService.$with(client).getAllByItem(
+		const [batches, batchServiceErr] = await BatchService.$with(client)._getAllByItem(
 			item.id,
 			consumptionMethodOrders[method],
 			and(eq(batchTable.status, 'active'), where),
@@ -342,10 +327,7 @@ export const StockService = createService(db, {
 	 */
 	reconcileCount: async (client, countId: string) => {
 		await client.transaction(async (tx) => {
-			const counts = await tx
-				.select()
-				.from(itemCountTable)
-				.where(eq(itemCountTable.countId, countId));
+			const counts = await tx.select().from(itemCountTable).where(eq(itemCountTable.countId, countId));
 
 			const genericAdjustments = [];
 			const batchAdjustments = [];
