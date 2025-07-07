@@ -1,4 +1,4 @@
-import { and, count, countDistinct, eq, getTableColumns, sql, SQL } from 'drizzle-orm';
+import { and, count, countDistinct, eq, getTableColumns, sql, SQL, sum } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { db } from '../db/db';
@@ -18,7 +18,6 @@ import { createService } from '../util/create-service';
 import { createOrderByValue, OrderByDefinition } from '../util/order-by-build';
 import { nowIso } from '../util/time';
 import { StockService } from './stock';
-import { ItemService } from './item';
 
 type ItemCountStaus = 'counted' | 'uncounted' | 'drifted';
 
@@ -246,14 +245,11 @@ export const CountService = createService(db, {
 
 	/**
 	 * Returns items for a count, with pagination support.
-	 *
-	 * Each result will have a status included, indicating
-	 * the state of the item within the count.
-	 *
+
 	 * @param id the ID of the count to get items for
 	 * @param limit the maximum amount of items to get
 	 * @param offset the amount of rows to skip, default `0`
-	 * @param orderBy the structure to order the result by, default `'countStatus'`
+	 * @param orderBy the structure to order the result by, default `'completedCounts'`
 	 * @param where a where clause to include in the query
 	 */
 	getItems: async (
@@ -261,7 +257,22 @@ export const CountService = createService(db, {
 		id: string,
 		limit: number,
 		offset = 0,
-		orderBy: OrderByDefinition<Item & { countStatus: ItemCountStaus }> = 'countStatus',
+		orderBy: OrderByDefinition<Item & { completedCounts: number }> = 'completedCounts',
 		where?: SQL,
-	) => {},
+	) => {
+		const completedCounts = count(itemCountTable.itemId);
+
+		return await client
+			.select({ ...getTableColumns(itemTable), completedCounts })
+			.from(itemTable)
+			.leftJoin(
+				itemCountTable,
+				and(eq(itemCountTable.countId, id), eq(itemCountTable.itemId, itemTable.id)),
+			)
+			.where(where)
+			.groupBy(itemTable.id)
+			.orderBy(...createOrderByValue(orderBy, { ...getTableColumns(itemTable), completedCounts }))
+			.limit(limit)
+			.offset(offset);
+	},
 });

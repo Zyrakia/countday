@@ -114,7 +114,7 @@ export const BatchService = createService(db, {
 		client,
 		itemId: string,
 		limit: number,
-		offset = 0,
+		offset: number = 0,
 		orderBy: OrderByDefinition<Batch> = 'createdDate',
 		where?: SQL<unknown>,
 	) => {
