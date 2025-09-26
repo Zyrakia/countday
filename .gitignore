@@ -1,17 +1,17 @@
 # Environment
-*/**/.env
-*/**/*.sql
+**/.env
+**/*.sql
 
 # Node
-*/**/node_modules
+**/node_modules
 
 # Build
-*/**/dist
-*/**/build
+**/dist
+**/build
 
 # Drizzle
-*/**/drizzle/meta/
-d*/**/rizzle/migrations/*.lock
+**/drizzle/meta/
+**/rizzle/migrations/*.lock
 
 # Svelte
-*/**/.svelte-kit
+**/.svelte-kit
