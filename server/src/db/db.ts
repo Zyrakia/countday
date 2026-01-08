@@ -18,7 +18,7 @@ const resolveDbUrl = (url: string) => {
 const sqlite = createClient({ url: resolveDbUrl(env.DB_FILENAME) });
 
 const _db = drizzle(sqlite, { casing: 'snake_case', schema });
-export type DatabaseClient = Omit<typeof _db, '$client'>;
+export type DatabaseClient = Omit<typeof _db, '$client' | 'batch'>;
 
 const db = _db as DatabaseClient;
 export { db };
