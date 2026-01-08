@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import { publicProcedure, router } from '../trpc';
 import { orderBySchema, paginationLimit, paginationOffset } from './input-helpers';
-import { insertItemCountSchema, insertCountDriftSchema, countTable, itemTable } from '../db/schema';
+import { countTable, itemTable } from '../db/schema';
+import { insertCountDriftSchema, insertItemCountSchema } from '../schemas';
 import { getTableColumns } from 'drizzle-orm';
 import { CountService } from '../service/count';
 

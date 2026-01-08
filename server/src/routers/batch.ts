@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { batchStatusValues, batchTable, insertBatchSchema, updateBatchSchema } from '../db/schema';
+import { batchStatusValues, batchTable } from '../db/schema';
+import { insertBatchSchema, updateBatchSchema } from '../schemas';
 import { BatchService } from '../service/batch';
 import { publicProcedure, router } from '../trpc';
 import { orderBySchema, paginationLimit, paginationOffset } from './input-helpers';

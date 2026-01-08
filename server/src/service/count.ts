@@ -3,16 +3,15 @@ import { z } from 'zod';
 
 import { db } from '../db/db';
 import {
-	Count,
-	CountDrift,
+	DatabaseCount,
+	DatabaseCountDrift,
+	DatabaseItem,
 	countDriftTable,
 	countTable,
-	insertCountDriftSchema,
-	insertItemCountSchema,
-	Item,
 	itemCountTable,
 	itemTable,
 } from '../db/schema';
+import { insertCountDriftSchema, insertItemCountSchema } from '../schemas';
 import { asNumber } from '../util/as-number';
 import { createService } from '../util/create-service';
 import { createOrderByValue, OrderByDefinition } from '../util/order-by-build';
@@ -97,7 +96,7 @@ export const CountService = createService(db, {
 	 */
 	get: async (
 		client,
-		orderBy: OrderByDefinition<Count> = { key: 'startedDate', dir: 'asc' },
+		orderBy: OrderByDefinition<DatabaseCount> = { key: 'startedDate', dir: 'asc' },
 		where?: SQL,
 	) => {
 		return await client
@@ -204,7 +203,7 @@ export const CountService = createService(db, {
 
 		const driftDate = nowIso();
 		const rows = affectedCounts.map(
-			({ countId }): CountDrift => ({
+			({ countId }): DatabaseCountDrift => ({
 				countId,
 				driftDate,
 				...drift,
@@ -257,7 +256,7 @@ export const CountService = createService(db, {
 		id: string,
 		limit: number,
 		offset = 0,
-		orderBy: OrderByDefinition<Item & { completedCounts: number }> = 'completedCounts',
+		orderBy: OrderByDefinition<DatabaseItem & { completedCounts: number }> = 'completedCounts',
 		where?: SQL,
 	) => {
 		const completedCounts = count(itemCountTable.itemId);

@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { insertItemSchema, updateItemSchema, itemTable } from '../db/schema';
+import { itemTable } from '../db/schema';
+import { insertItemSchema, updateItemSchema } from '../schemas';
 import { publicProcedure, router } from '../trpc';
 import { orderBySchema, paginationLimit, paginationOffset } from './input-helpers';
 import { getTableColumns } from 'drizzle-orm';

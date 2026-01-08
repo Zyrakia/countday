@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { insertItemFormSchema, updateItemFormSchema } from '../db/schema';
+import { insertItemFormSchema, updateItemFormSchema } from '../schemas';
 import { ItemFormService } from '../service/item-form';
 import { publicProcedure, router } from '../trpc';
 

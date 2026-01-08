@@ -1,7 +1,7 @@
+import { relations } from 'drizzle-orm';
+import type { InferSelectModel } from 'drizzle-orm';
 import { integer, primaryKey, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
-import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 import { v4 as uuid } from 'uuid';
-import { z } from 'zod';
 
 const randomIdColumn = () =>
 	text('id')
@@ -105,68 +105,99 @@ export const countDriftTable = sqliteTable(
 	(table) => [primaryKey({ columns: [table.countId, table.itemId] })],
 );
 
-const dtRefinement = (v: z.ZodString) => v.datetime();
-const optionalDtRefinement = (v: z.ZodString) => dtRefinement(v).optional();
+export const _supplierRelations = relations(supplierTable, ({ many }) => ({
+	items: many(itemTable),
+	batches: many(batchTable),
+}));
 
-export const selectSupplierSchema = createSelectSchema(supplierTable);
-export const insertSupplierSchema = createInsertSchema(supplierTable).omit({ id: true });
-export const updateSupplierSchema = createUpdateSchema(supplierTable).omit({ id: true });
+export const _locationRelations = relations(locationTable, ({ many }) => ({
+	items: many(itemTable),
+	batches: many(batchTable),
+}));
 
-export const selectLocationSchema = createSelectSchema(locationTable);
-export const insertLocationSchema = createInsertSchema(locationTable).omit({ id: true });
-export const updateLocationSchema = createUpdateSchema(locationTable).omit({ id: true });
+export const _categoryRelations = relations(categoryTable, ({ many }) => ({
+	items: many(itemTable),
+}));
 
-export const selectCategorySchema = createSelectSchema(categoryTable);
-export const insertCategorySchema = createInsertSchema(categoryTable).omit({ id: true });
-export const updateCategorySchema = createUpdateSchema(categoryTable).omit({ id: true });
+export const _itemRelations = relations(itemTable, ({ one, many }) => ({
+	category: one(categoryTable, {
+		fields: [itemTable.categoryId],
+		references: [categoryTable.id],
+	}),
+	defaultSupplier: one(supplierTable, {
+		fields: [itemTable.defaultSupplierId],
+		references: [supplierTable.id],
+	}),
+	defaultLocation: one(locationTable, {
+		fields: [itemTable.defaultLocationId],
+		references: [locationTable.id],
+	}),
+	forms: many(itemFormTable),
+	batches: many(batchTable),
+	itemCounts: many(itemCountTable),
+	countDrifts: many(countDriftTable),
+}));
 
-export const selectItemSchema = createSelectSchema(itemTable);
-export const insertItemSchema = createInsertSchema(itemTable).omit({ id: true });
-export const updateItemSchema = createUpdateSchema(itemTable).omit({ id: true });
+export const _itemFormRelations = relations(itemFormTable, ({ one }) => ({
+	item: one(itemTable, {
+		fields: [itemFormTable.itemId],
+		references: [itemTable.id],
+	}),
+}));
 
-export const selectItemFormSchema = createSelectSchema(itemFormTable);
-export const insertItemFormSchema = createInsertSchema(itemFormTable);
-export const updateItemFormSchema = createUpdateSchema(itemFormTable).omit({
-	id: true,
-	itemId: true,
-});
+export const _batchRelations = relations(batchTable, ({ one, many }) => ({
+	item: one(itemTable, {
+		fields: [batchTable.itemId],
+		references: [itemTable.id],
+	}),
+	location: one(locationTable, {
+		fields: [batchTable.locationId],
+		references: [locationTable.id],
+	}),
+	supplier: one(supplierTable, {
+		fields: [batchTable.supplierId],
+		references: [supplierTable.id],
+	}),
+	itemCounts: many(itemCountTable),
+}));
 
-export const selectBatchSchema = createSelectSchema(batchTable);
-export const insertBatchSchema = createInsertSchema(batchTable, {
-	expiryDate: optionalDtRefinement,
-}).omit({ id: true, createdDate: true, stockoutDate: true });
-export const updateBatchSchema = createUpdateSchema(batchTable, {
-	expiryDate: optionalDtRefinement,
-}).omit({ id: true, itemId: true, createdDate: true, stockoutDate: true });
+export const _countRelations = relations(countTable, ({ many }) => ({
+	itemCounts: many(itemCountTable),
+	countDrifts: many(countDriftTable),
+}));
 
-export const selectCountSchema = createSelectSchema(countTable);
+export const _itemCountRelations = relations(itemCountTable, ({ one }) => ({
+	count: one(countTable, {
+		fields: [itemCountTable.countId],
+		references: [countTable.id],
+	}),
+	item: one(itemTable, {
+		fields: [itemCountTable.itemId],
+		references: [itemTable.id],
+	}),
+	batch: one(batchTable, {
+		fields: [itemCountTable.batchId],
+		references: [batchTable.id],
+	}),
+}));
 
-export const selectItemCountSchema = createSelectSchema(itemCountTable);
-export const insertItemCountSchema = createInsertSchema(itemCountTable).omit({ countedDate: true });
-export const updateItemCountSchema = createUpdateSchema(itemCountTable).omit({
-	itemId: true,
-	countId: true,
-	countedDate: true,
-	batchId: true,
-});
+export const _countDriftRelations = relations(countDriftTable, ({ one }) => ({
+	count: one(countTable, {
+		fields: [countDriftTable.countId],
+		references: [countTable.id],
+	}),
+	item: one(itemTable, {
+		fields: [countDriftTable.itemId],
+		references: [itemTable.id],
+	}),
+}));
 
-export const selectCountDriftSchema = createSelectSchema(countDriftTable);
-export const insertCountDriftSchema = createInsertSchema(countDriftTable).omit({
-	driftDate: true,
-	countId: true,
-});
-export const updateCountDriftSchema = createUpdateSchema(countDriftTable).omit({
-	countId: true,
-	driftDate: true,
-	itemId: true,
-});
-
-export type Supplier = z.infer<typeof selectSupplierSchema>;
-export type Location = z.infer<typeof selectLocationSchema>;
-export type Category = z.infer<typeof selectCategorySchema>;
-export type Item = z.infer<typeof selectItemSchema>;
-export type ItemForm = z.infer<typeof selectItemFormSchema>;
-export type Batch = z.infer<typeof selectBatchSchema>;
-export type Count = z.infer<typeof selectCountSchema>;
-export type ItemCount = z.infer<typeof selectItemCountSchema>;
-export type CountDrift = z.infer<typeof selectCountDriftSchema>;
+export type DatabaseSupplier = InferSelectModel<typeof supplierTable>;
+export type DatabaseLocation = InferSelectModel<typeof locationTable>;
+export type DatabaseCategory = InferSelectModel<typeof categoryTable>;
+export type DatabaseItem = InferSelectModel<typeof itemTable>;
+export type DatabaseItemForm = InferSelectModel<typeof itemFormTable>;
+export type DatabaseBatch = InferSelectModel<typeof batchTable>;
+export type DatabaseCount = InferSelectModel<typeof countTable>;
+export type DatabaseItemCount = InferSelectModel<typeof itemCountTable>;
+export type DatabaseCountDrift = InferSelectModel<typeof countDriftTable>;

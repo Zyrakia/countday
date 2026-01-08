@@ -2,7 +2,8 @@ import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { db } from '../db/db';
-import { insertItemFormSchema, itemFormTable, updateItemFormSchema } from '../db/schema';
+import { itemFormTable } from '../db/schema';
+import { insertItemFormSchema, updateItemFormSchema } from '../schemas';
 import { createService } from '../util/create-service';
 
 /**

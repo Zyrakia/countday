@@ -2,13 +2,8 @@ import { count, eq, SQL } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { db } from '../db/db';
-import {
-	Category,
-	categoryTable,
-	insertCategorySchema,
-	itemTable,
-	updateCategorySchema,
-} from '../db/schema';
+import { DatabaseCategory, categoryTable, itemTable } from '../db/schema';
+import { insertCategorySchema, updateCategorySchema } from '../schemas';
 import { createService } from '../util/create-service';
 import { createOrderByValue, OrderByDefinition } from '../util/order-by-build';
 
@@ -99,7 +94,11 @@ export const CategoryService = createService(db, {
 	 * @param orderBy the structure to order by, defaults to `'name'`
 	 * @param where a where statement to include in the query
 	 */
-	get: async (client, orderBy: OrderByDefinition<Category> = 'name', where?: SQL<unknown>) => {
+get: async (
+	client,
+	orderBy: OrderByDefinition<DatabaseCategory> = 'name',
+	where?: SQL<unknown>,
+) => {
 		return await client
 			.select()
 			.from(categoryTable)

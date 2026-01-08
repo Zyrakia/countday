@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { insertSupplierSchema, updateSupplierSchema, supplierTable } from '../db/schema';
+import { supplierTable } from '../db/schema';
+import { insertSupplierSchema, updateSupplierSchema } from '../schemas';
 import { SupplierService } from '../service/supplier';
 import { publicProcedure, router } from '../trpc';
 import { orderBySchema } from './input-helpers';

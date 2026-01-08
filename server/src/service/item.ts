@@ -2,14 +2,8 @@ import { count, eq, getTableColumns, like, or, SQL, sql } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { db } from '../db/db';
-import {
-	batchTable,
-	insertItemSchema,
-	Item,
-	itemFormTable,
-	itemTable,
-	updateItemSchema,
-} from '../db/schema';
+import { batchTable, DatabaseItem, itemFormTable, itemTable } from '../db/schema';
+import { insertItemSchema, updateItemSchema } from '../schemas';
 import { createService } from '../util/create-service';
 import { createOrderByValue, OrderByDefinition } from '../util/order-by-build';
 
@@ -111,7 +105,7 @@ export const ItemService = createService(db, {
 		client,
 		limit: number,
 		offset = 0,
-		orderBy: OrderByDefinition<Item> = 'name',
+		orderBy: OrderByDefinition<DatabaseItem> = 'name',
 		where?: SQL<unknown>,
 	) => {
 		return await client
@@ -137,7 +131,7 @@ export const ItemService = createService(db, {
 		query: string,
 		limit: number,
 		offset?: number,
-		orderBy?: OrderByDefinition<Item>,
+		orderBy?: OrderByDefinition<DatabaseItem>,
 	) => {
 		const queryTemplate = `%${query.toLowerCase()}%`;
 

@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { insertLocationSchema, updateLocationSchema, locationTable } from '../db/schema';
+import { locationTable } from '../db/schema';
+import { insertLocationSchema, updateLocationSchema } from '../schemas';
 import { LocationService } from '../service/location';
 import { publicProcedure, router } from '../trpc';
 import { orderBySchema } from './input-helpers';

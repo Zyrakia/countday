@@ -11,7 +11,7 @@
 
 # Drizzle
 **/drizzle/meta/
-**/rizzle/migrations/*.lock
+**/drizzle/migrations/*.lock
 
 # Svelte
 **/.svelte-kit

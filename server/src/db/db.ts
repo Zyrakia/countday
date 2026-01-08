@@ -1,11 +1,21 @@
-import Database from 'bun:sqlite';
-import { drizzle } from 'drizzle-orm/bun-sqlite';
+import { createClient } from '@libsql/client';
+import { drizzle } from 'drizzle-orm/libsql';
 
-import { env } from '../env';
+import { env } from '@countday/shared';
 import * as schema from './schema';
 
-const sqlite = new Database(env.DB_FILENAME);
-sqlite.exec('PRAGMA foreign_keys = ON');
+const resolveDbUrl = (url: string) => {
+	if (!url.startsWith('file:')) return url;
+
+	const rawPath = url.slice('file:'.length);
+	if (!rawPath || rawPath.startsWith('//')) return url;
+
+	const repoRootUrl = new URL('../../..', import.meta.url);
+	const resolved = new URL(rawPath, repoRootUrl);
+	return resolved.href;
+};
+
+const sqlite = createClient({ url: resolveDbUrl(env.DB_FILENAME) });
 
 const _db = drizzle(sqlite, { casing: 'snake_case', schema });
 export type DatabaseClient = Omit<typeof _db, '$client'>;

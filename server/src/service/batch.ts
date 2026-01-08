@@ -2,7 +2,8 @@ import { and, eq, SQL } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { db } from '../db/db';
-import { Batch, batchTable, insertBatchSchema, updateBatchSchema } from '../db/schema';
+import { DatabaseBatch, batchTable } from '../db/schema';
+import { insertBatchSchema, updateBatchSchema } from '../schemas';
 import { createService } from '../util/create-service';
 import { createOrderByValue, OrderByDefinition } from '../util/order-by-build';
 import { nowIso } from '../util/time';
@@ -86,7 +87,12 @@ export const BatchService = createService(db, {
 	 * @param orderBy the structure to order by
 	 * @param where a where statement to include in the query
 	 */
-	_getAllByItem: async (client, itemId: string, orderBy?: OrderByDefinition<Batch>, where?: SQL) => {
+	_getAllByItem: async (
+		client,
+		itemId: string,
+		orderBy?: OrderByDefinition<DatabaseBatch>,
+		where?: SQL,
+	) => {
 		return await client
 			.select()
 			.from(batchTable)
@@ -110,7 +116,7 @@ export const BatchService = createService(db, {
 		itemId: string,
 		limit: number,
 		offset: number = 0,
-		orderBy: OrderByDefinition<Batch> = 'createdDate',
+		orderBy: OrderByDefinition<DatabaseBatch> = 'createdDate',
 		where?: SQL<unknown>,
 	) => {
 		return await client

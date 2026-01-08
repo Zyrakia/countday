@@ -15,14 +15,14 @@ import { z } from 'zod';
 
 import { db } from '../db/db';
 import {
-	Batch,
 	BatchStatus,
+	DatabaseBatch,
+	DatabaseItem,
 	batchTable,
-	insertBatchSchema,
-	Item,
 	itemCountTable,
 	itemTable,
 } from '../db/schema';
+import { insertBatchSchema } from '../schemas';
 import { asNumber } from '../util/as-number';
 import { createService } from '../util/create-service';
 import { createOrderByValue, OrderByDefinition } from '../util/order-by-build';
@@ -59,7 +59,7 @@ export enum ConsumptionMethod {
  * Defines the order in which each consumption method needs
  * to retrieve batches in.
  */
-const consumptionMethodOrders: Readonly<Record<ConsumptionMethod, OrderByDefinition<Batch>>> = {
+const consumptionMethodOrders: Readonly<Record<ConsumptionMethod, OrderByDefinition<DatabaseBatch>>> = {
 	[ConsumptionMethod.FIFO]: { key: 'createdDate', dir: 'asc' },
 	[ConsumptionMethod.LIFO]: { key: 'createdDate', dir: 'desc' },
 	[ConsumptionMethod.FEFO]: [
@@ -175,7 +175,7 @@ export const StockService = createService(db, {
 		qtyType: BatchStatus,
 		limit: number,
 		offset = 0,
-		orderBy: OrderByDefinition<Item & { totalQty: number }> = {
+		orderBy: OrderByDefinition<DatabaseItem & { totalQty: number }> = {
 			key: 'totalQty',
 			dir: qtyType === 'active' ? 'asc' : 'desc',
 		},
@@ -220,7 +220,7 @@ export const StockService = createService(db, {
 		qtyType: BatchStatus,
 		limit: number,
 		offset?: number,
-		orderBy?: OrderByDefinition<Item & { totalQty: number }>,
+		orderBy?: OrderByDefinition<DatabaseItem & { totalQty: number }>,
 	) => {
 		const queryTemplate = `%${query.toLowerCase()}%`;
 
@@ -284,7 +284,7 @@ export const StockService = createService(db, {
 				const newQty = batch.qty - qtyToRemove;
 				remaining -= qtyToRemove;
 
-				const batchUpdates: Partial<Batch> = { qty: newQty };
+				const batchUpdates: Partial<DatabaseBatch> = { qty: newQty };
 				if (newQty === 0) {
 					batchUpdates.status = 'archived';
 					batchUpdates.stockoutDate = new Date().toISOString();

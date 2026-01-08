@@ -2,14 +2,8 @@ import { count, eq, SQL } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { db } from '../db/db';
-import {
-	batchTable,
-	insertSupplierSchema,
-	itemTable,
-	Supplier,
-	supplierTable,
-	updateSupplierSchema,
-} from '../db/schema';
+import { batchTable, DatabaseSupplier, itemTable, supplierTable } from '../db/schema';
+import { insertSupplierSchema, updateSupplierSchema } from '../schemas';
 import { createService } from '../util/create-service';
 import { createOrderByValue, OrderByDefinition } from '../util/order-by-build';
 
@@ -105,7 +99,11 @@ export const SupplierService = createService(db, {
 	 * @param orderBy the structure to order by, defaults to `'name'`
 	 * @param where a where statement to include in the query
 	 */
-	get: async (client, orderBy: OrderByDefinition<Supplier> = 'name', where?: SQL<unknown>) => {
+get: async (
+	client,
+	orderBy: OrderByDefinition<DatabaseSupplier> = 'name',
+	where?: SQL<unknown>,
+) => {
 		return await client
 			.select()
 			.from(supplierTable)

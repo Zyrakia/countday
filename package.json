@@ -1,0 +1,25 @@
+{
+	"name": "countday",
+	"private": true,
+	"version": "0.0.1",
+	"type": "module",
+	"scripts": {
+		"dev": "concurrently -k -n server,client -c yellow,cyan \"bun run dev:server\" \"bun run dev:client\"",
+		"dev:server": "bun run --cwd server dev",
+		"dev:client": "bun run --cwd client dev",
+		"build": "bun run build:server && bun run build:client",
+		"build:server": "bun run --cwd server build",
+		"build:client": "bun run --cwd client build",
+		"start": "concurrently -k -n server,client -c yellow,cyan \"bun run start:server\" \"bun run preview:client\"",
+		"start:server": "bun run --cwd server start",
+		"preview:client": "bun run --cwd client preview"
+	},
+	"devDependencies": {
+		"concurrently": "^9.2.1"
+	},
+	"workspaces": [
+		"client",
+		"server",
+		"packages/*"
+	]
+}
