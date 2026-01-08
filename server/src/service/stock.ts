@@ -1,4 +1,16 @@
-import { and, asc, desc, eq, getTableColumns, like, notInArray, or, sql, SQL, sum } from 'drizzle-orm';
+import {
+	and,
+	asc,
+	desc,
+	eq,
+	getTableColumns,
+	like,
+	notInArray,
+	or,
+	sql,
+	SQL,
+	sum,
+} from 'drizzle-orm';
 import { z } from 'zod';
 
 import { db } from '../db/db';
@@ -178,7 +190,10 @@ export const StockService = createService(db, {
 		return client
 			.select({ ...getTableColumns(itemTable), totalQty: totalQtyColumn })
 			.from(itemTable)
-			.leftJoin(batchTable, and(eq(batchTable.itemId, itemTable.id), eq(batchTable.status, qtyType)))
+			.leftJoin(
+				batchTable,
+				and(eq(batchTable.itemId, itemTable.id), eq(batchTable.status, qtyType)),
+			)
 			.where(where)
 			.groupBy(itemTable.id)
 			.orderBy(...evaluatedOrderBy)
@@ -327,7 +342,10 @@ export const StockService = createService(db, {
 	 */
 	reconcileCount: async (client, countId: string) => {
 		await client.transaction(async (tx) => {
-			const counts = await tx.select().from(itemCountTable).where(eq(itemCountTable.countId, countId));
+			const counts = await tx
+				.select()
+				.from(itemCountTable)
+				.where(eq(itemCountTable.countId, countId));
 
 			const genericAdjustments = [];
 			const batchAdjustments = [];
@@ -337,7 +355,9 @@ export const StockService = createService(db, {
 				else genericAdjustments.push(count);
 			}
 
-			const batchAdjustmentIds = batchAdjustments.map(({ batchId }) => batchId!);
+			const batchAdjustmentIds = batchAdjustments.flatMap(({ batchId }) =>
+				batchId !== null ? [batchId] : [],
+			);
 			const excludeAdjustedBatches = notInArray(batchTable.id, batchAdjustmentIds);
 
 			await Promise.all(
