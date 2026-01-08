@@ -1,6 +1,6 @@
 # Environment
 **/.env
-**/*.sql
+**/*.sqlite
 
 # Node
 **/node_modules
@@ -11,7 +11,6 @@
 
 # Drizzle
 **/drizzle/meta/
-**/drizzle/migrations/*.lock
 
 # Svelte
 **/.svelte-kit
