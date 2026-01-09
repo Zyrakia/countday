@@ -1,7 +1,7 @@
 import { BatchStatusValues } from '@countday/shared';
 import { relations } from 'drizzle-orm';
 import type { InferSelectModel } from 'drizzle-orm';
-import { integer, primaryKey, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { index, integer, primaryKey, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 import { v4 as uuid } from 'uuid';
 
 const randomIdColumn = () =>
@@ -28,49 +28,72 @@ export const categoryTable = sqliteTable('category', {
 	description: text(),
 });
 
-export const itemTable = sqliteTable('item', {
-	id: randomIdColumn(),
-	name: text().notNull(),
-	uom: text().notNull(),
-	categoryId: text().references(() => categoryTable.id, { onDelete: 'set null' }),
-	description: text(),
-	imageUrl: text(),
-	warningQty: real(),
-	targetSalePrice: real(),
-	targetMarginIsPercent: integer({ mode: 'boolean' }).notNull().default(true),
-	targetMargin: real(),
-	defaultSupplierId: text().references(() => supplierTable.id, { onDelete: 'set null' }),
-	defaultLocationId: text().references(() => locationTable.id, { onDelete: 'set null' }),
-});
+export const itemTable = sqliteTable(
+	'item',
+	{
+		id: randomIdColumn(),
+		name: text().notNull(),
+		uom: text().notNull(),
+		categoryId: text().references(() => categoryTable.id, { onDelete: 'set null' }),
+		description: text(),
+		imageUrl: text(),
+		warningQty: real(),
+		targetSalePrice: real(),
+		targetMarginIsPercent: integer({ mode: 'boolean' }).notNull().default(true),
+		targetMargin: real(),
+		defaultSupplierId: text().references(() => supplierTable.id, { onDelete: 'set null' }),
+		defaultLocationId: text().references(() => locationTable.id, { onDelete: 'set null' }),
+	},
+	(table) => [index('item_category_id_idx').on(table.categoryId)],
+);
 
-export const itemFormTable = sqliteTable('item_form', {
-	id: text().primaryKey(),
-	itemId: text()
-		.references(() => itemTable.id, { onDelete: 'cascade' })
-		.notNull(),
-	qtyMultiplier: real().notNull(),
-});
+export const itemFormTable = sqliteTable(
+	'item_form',
+	{
+		id: text().primaryKey(),
+		itemId: text()
+			.references(() => itemTable.id, { onDelete: 'cascade' })
+			.notNull(),
+		qtyMultiplier: real().notNull(),
+	},
+	(table) => [index('item_form_item_id_idx').on(table.itemId)],
+);
 
-export const batchTable = sqliteTable('batch', {
-	id: randomIdColumn(),
-	itemId: text()
-		.references(() => itemTable.id, { onDelete: 'cascade' })
-		.notNull(),
-	qty: real().notNull(),
-	unitBuyPrice: real(),
-	status: text('status', { enum: BatchStatusValues }).default('active').notNull(),
-	locationId: text().references(() => locationTable.id, { onDelete: 'set null' }),
-	supplierId: text().references(() => supplierTable.id, { onDelete: 'set null' }),
-	createdDate: text().notNull(),
-	stockoutDate: text(),
-	expiryDate: text(),
-});
+export const batchTable = sqliteTable(
+	'batch',
+	{
+		id: randomIdColumn(),
+		itemId: text()
+			.references(() => itemTable.id, { onDelete: 'cascade' })
+			.notNull(),
+		qty: real().notNull(),
+		unitBuyPrice: real(),
+		status: text('status', { enum: BatchStatusValues }).default('active').notNull(),
+		locationId: text().references(() => locationTable.id, { onDelete: 'set null' }),
+		supplierId: text().references(() => supplierTable.id, { onDelete: 'set null' }),
+		createdDate: text().notNull(),
+		stockoutDate: text(),
+		expiryDate: text(),
+	},
+	(table) => [
+		index('batch_item_status_created_idx').on(table.itemId, table.status, table.createdDate),
+		index('batch_location_id_idx').on(table.locationId),
+		index('batch_supplier_id_idx').on(table.supplierId),
+	],
+);
 
-export const countTable = sqliteTable('count', {
-	id: randomIdColumn(),
-	startedDate: text().notNull(),
-	finishedDate: text(),
-});
+export const countTable = sqliteTable(
+	'count',
+	{
+		id: randomIdColumn(),
+		startedDate: text().notNull(),
+		finishedDate: text(),
+	},
+	(table) => [
+		index('count_started_date_idx').on(table.startedDate),
+		index('count_finished_date_idx').on(table.finishedDate),
+	],
+);
 
 export const itemCountTable = sqliteTable(
 	'item_count',
@@ -85,7 +108,10 @@ export const itemCountTable = sqliteTable(
 		countedQty: real().notNull(),
 		countedDate: text().notNull(),
 	},
-	(table) => [primaryKey({ columns: [table.countId, table.itemId, table.batchId] })],
+	(table) => [
+		primaryKey({ columns: [table.countId, table.itemId, table.batchId] }),
+		index('item_count_item_id_idx').on(table.itemId, table.countId),
+	],
 );
 
 export const countDriftTable = sqliteTable(
