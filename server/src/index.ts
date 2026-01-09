@@ -3,7 +3,7 @@ import Fastify from 'fastify';
 import { fastifyCors as fastifyCordsPlugin } from '@fastify/cors';
 import { fastifyTRPCPlugin } from '@trpc/server/adapters/fastify';
 
-import { env } from '@countday/shared';
+import { serverEnv } from '@countday/shared/env/server';
 import { appRouter } from './routers';
 import { createContext } from './trpc';
 
@@ -19,6 +19,6 @@ server.register(fastifyTRPCPlugin, {
 	trpcOptions: { router: appRouter, createContext: () => createContext() },
 });
 
-server.listen({ port: env.PORT }, () => {
-	console.log(`Countday started on port ${env.PORT}`);
+server.listen({ port: serverEnv.PORT }, () => {
+	console.log(`Countday started on port ${serverEnv.PORT}`);
 });

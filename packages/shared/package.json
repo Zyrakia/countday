@@ -5,10 +5,11 @@
 	"type": "module",
 	"main": "./src/index.ts",
 	"exports": {
-		".": "./src/index.ts"
+		".": "./src/index.ts",
+		"./env/public": "./src/env/public.ts",
+		"./env/server": "./src/env/server.ts"
 	},
 	"dependencies": {
-		"@t3-oss/env-core": "^0.13.10",
 		"dotenv": "^17.2.3",
 		"zod": "^4.3.5"
 	}

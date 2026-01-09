@@ -1,8 +1,8 @@
 import { createTRPCProxyClient, httpBatchLink } from '@trpc/client';
 
-import { env } from '@countday/shared';
+import { publicEnv } from '@countday/shared/env/public';
 import type { AppRouter } from '../../../server/src/routers/index';
 
 export const trpcClient = createTRPCProxyClient<AppRouter>({
-	links: [httpBatchLink({ url: env.VITE_API_URL })],
+	links: [httpBatchLink({ url: publicEnv.VITE_API_URL })],
 });

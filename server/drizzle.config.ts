@@ -1,4 +1,4 @@
-import { env } from '@countday/shared';
+import { serverEnv } from '@countday/shared/env/server';
 import { defineConfig } from 'drizzle-kit';
 
 export default defineConfig({
@@ -6,6 +6,6 @@ export default defineConfig({
 	dialect: 'sqlite',
 	casing: 'snake_case',
 	dbCredentials: {
-		url: env.DB_FILENAME,
+		url: serverEnv.DB_FILENAME,
 	},
 });
