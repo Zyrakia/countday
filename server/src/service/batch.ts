@@ -3,11 +3,11 @@ import { z } from 'zod';
 
 import { db } from '../db/db';
 import { DatabaseBatch, batchTable } from '../db/schema';
-import { insertBatchSchema, updateBatchSchema } from '../schemas';
 import { createService } from '../util/create-service';
 import { createOrderByValue, OrderByDefinition } from '../util/order-by-build';
 import { nowIso } from '../util/time';
 import { ItemService } from './item';
+import { CreateBatchSchema, UpdateBatchSchema } from '@countday/shared';
 
 /**
  * Handles RUD operations for batches. Creation of batches
@@ -20,17 +20,17 @@ export const BatchService = createService(db, {
 	 * @param batch the properties of the batch
 	 * @return the created batch
 	 */
-	insert: async (client, batch: z.infer<typeof insertBatchSchema>) => {
+	insert: async (client, batch: z.infer<typeof CreateBatchSchema>) => {
 		const [item, err] = await ItemService.$with(client).getOne(batch.itemId);
 		if (err !== null) throw err;
 
 		const [inserted] = await client
 			.insert(batchTable)
 			.values({
+				locationId: item.defaultLocationId,
+				supplierId: item.defaultSupplierId,
 				...batch,
 				createdDate: nowIso(),
-				locationId: batch.locationId ?? item.defaultLocationId,
-				supplierId: batch.supplierId ?? item.defaultSupplierId,
 			})
 			.returning();
 
@@ -45,7 +45,7 @@ export const BatchService = createService(db, {
 	 * @param partial the values to update on the batch
 	 * @return the updated batch
 	 */
-	update: async (client, id: string, partial: z.infer<typeof updateBatchSchema>) => {
+	update: async (client, id: string, partial: z.infer<typeof UpdateBatchSchema>) => {
 		const [updated] = await client
 			.update(batchTable)
 			.set(partial)

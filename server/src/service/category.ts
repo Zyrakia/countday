@@ -3,9 +3,9 @@ import { z } from 'zod';
 
 import { db } from '../db/db';
 import { DatabaseCategory, categoryTable, itemTable } from '../db/schema';
-import { insertCategorySchema, updateCategorySchema } from '../schemas';
 import { createService } from '../util/create-service';
 import { createOrderByValue, OrderByDefinition } from '../util/order-by-build';
+import { CreateCategorySchema, UpdateCategorySchema } from '@countday/shared';
 
 /**
  * Responsible for category CRUD logic.
@@ -17,7 +17,7 @@ export const CategoryService = createService(db, {
 	 * @param category the properties of the category
 	 * @return the created category
 	 */
-	insert: async (client, category: z.infer<typeof insertCategorySchema>) => {
+	insert: async (client, category: z.infer<typeof CreateCategorySchema>) => {
 		const [inserted] = await client.insert(categoryTable).values(category).returning();
 		if (!inserted) throw `Unknown insertion error`;
 		return inserted;
@@ -30,7 +30,7 @@ export const CategoryService = createService(db, {
 	 * @param partial the properties to update on the category
 	 * @return the updated category
 	 */
-	update: async (client, id: string, partial: z.infer<typeof updateCategorySchema>) => {
+	update: async (client, id: string, partial: z.infer<typeof UpdateCategorySchema>) => {
 		const [updated] = await client
 			.update(categoryTable)
 			.set(partial)
@@ -51,10 +51,7 @@ export const CategoryService = createService(db, {
 	 * @return the deleted category
 	 */
 	remove: async (client, id: string) => {
-		const [deleted] = await client
-			.delete(categoryTable)
-			.where(eq(categoryTable.id, id))
-			.returning();
+		const [deleted] = await client.delete(categoryTable).where(eq(categoryTable.id, id)).returning();
 
 		if (!deleted) throw `Unable to delete cateogry by ID "${id}"`;
 		return deleted;
@@ -94,11 +91,7 @@ export const CategoryService = createService(db, {
 	 * @param orderBy the structure to order by, defaults to `'name'`
 	 * @param where a where statement to include in the query
 	 */
-get: async (
-	client,
-	orderBy: OrderByDefinition<DatabaseCategory> = 'name',
-	where?: SQL<unknown>,
-) => {
+	get: async (client, orderBy: OrderByDefinition<DatabaseCategory> = 'name', where?: SQL<unknown>) => {
 		return await client
 			.select()
 			.from(categoryTable)

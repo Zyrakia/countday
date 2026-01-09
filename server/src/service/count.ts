@@ -11,12 +11,12 @@ import {
 	itemCountTable,
 	itemTable,
 } from '../db/schema';
-import { insertCountDriftSchema, insertItemCountSchema } from '../schemas';
 import { asNumber } from '../util/as-number';
 import { createService } from '../util/create-service';
 import { createOrderByValue, OrderByDefinition } from '../util/order-by-build';
 import { nowIso } from '../util/time';
 import { StockService } from './stock';
+import { CreateCountDriftSchema, CreateItemCountSchema } from '@countday/shared';
 
 type ItemCountStaus = 'counted' | 'uncounted' | 'drifted';
 
@@ -113,7 +113,7 @@ export const CountService = createService(db, {
 	 * @param count the properties of the item count to create
 	 * @return the created or updated item count, or undefined if not successful
 	 */
-	countItem: async (client, count: z.infer<typeof insertItemCountSchema>) => {
+	countItem: async (client, count: z.infer<typeof CreateItemCountSchema>) => {
 		const countedDate = nowIso();
 		const { batchId, countedQty } = count;
 
@@ -195,7 +195,7 @@ export const CountService = createService(db, {
 	 * @param tx the transaction client in which to process the drift
 	 * @param drift the properties of the drift to process
 	 */
-	processDrift: async (client, drift: z.infer<typeof insertCountDriftSchema>) => {
+	processDrift: async (client, drift: z.infer<typeof CreateCountDriftSchema>) => {
 		if (drift.qtyChange === 0) return;
 
 		const [affectedCounts, err] = await CountService.$with(client).getActiveCountsForItem(drift.itemId);

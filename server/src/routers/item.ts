@@ -1,20 +1,20 @@
 import { z } from 'zod';
 import { itemTable } from '../db/schema';
-import { insertItemSchema, updateItemSchema } from '../schemas';
 import { publicProcedure, router } from '../trpc';
 import { orderBySchema, paginationLimit, paginationOffset } from './input-helpers';
 import { getTableColumns } from 'drizzle-orm';
 import { ItemService } from '../service/item';
+import { CreateItemSchema, UpdateItemSchema } from '@countday/shared';
 
 export const itemRouter = router({
-	insert: publicProcedure.input(insertItemSchema).mutation(async ({ input }) => {
+	insert: publicProcedure.input(CreateItemSchema).mutation(async ({ input }) => {
 		const [item, err] = await ItemService.insert(input);
 		if (err) throw new Error('Failed to insert item.', { cause: err });
 		return item;
 	}),
 
 	update: publicProcedure
-		.input(z.object({ id: z.string(), partial: updateItemSchema }))
+		.input(z.object({ id: z.string(), partial: UpdateItemSchema }))
 		.mutation(async ({ input }) => {
 			const [item, err] = await ItemService.update(input.id, input.partial);
 			if (err) throw new Error('Failed to update item.', { cause: err });

@@ -3,9 +3,9 @@ import { z } from 'zod';
 
 import { db } from '../db/db';
 import { batchTable, DatabaseLocation, itemTable, locationTable } from '../db/schema';
-import { insertLocationSchema, updateLocationSchema } from '../schemas';
 import { createService } from '../util/create-service';
 import { createOrderByValue, OrderByDefinition } from '../util/order-by-build';
+import { CreateLocationSchema, UpdateLocationSchema } from '@countday/shared';
 
 /**
  * Responsible for location CRUD logic.
@@ -17,7 +17,7 @@ export const LocationService = createService(db, {
 	 * @param location the properties of the location
 	 * @return the created location
 	 */
-	insert: async (client, location: z.infer<typeof insertLocationSchema>) => {
+	insert: async (client, location: z.infer<typeof CreateLocationSchema>) => {
 		const [inserted] = await client.insert(locationTable).values(location).returning();
 		if (!inserted) throw `Unknown insertion error`;
 		return inserted;
@@ -30,7 +30,7 @@ export const LocationService = createService(db, {
 	 * @param partial the properties to update on the location
 	 * @return the updated location
 	 */
-	update: async (client, id: string, partial: z.infer<typeof updateLocationSchema>) => {
+	update: async (client, id: string, partial: z.infer<typeof UpdateLocationSchema>) => {
 		const [updated] = await client
 			.update(locationTable)
 			.set(partial)
@@ -51,10 +51,7 @@ export const LocationService = createService(db, {
 	 * @return the deleted location
 	 */
 	remove: async (client, id: string) => {
-		const [deleted] = await client
-			.delete(locationTable)
-			.where(eq(locationTable.id, id))
-			.returning();
+		const [deleted] = await client.delete(locationTable).where(eq(locationTable.id, id)).returning();
 
 		if (!deleted) throw `Unable to delete location of ID "${id}"`;
 		return deleted;
@@ -99,11 +96,7 @@ export const LocationService = createService(db, {
 	 * @param orderBy the structure to order by, defaults to `'name'`
 	 * @param where a where statement to include in the query
 	 */
-	get: async (
-		client,
-		orderBy: OrderByDefinition<DatabaseLocation> = 'name',
-		where?: SQL<unknown>,
-	) => {
+	get: async (client, orderBy: OrderByDefinition<DatabaseLocation> = 'name', where?: SQL<unknown>) => {
 		return await client
 			.select()
 			.from(locationTable)

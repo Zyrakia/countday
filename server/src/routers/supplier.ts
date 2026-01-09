@@ -1,20 +1,20 @@
 import { z } from 'zod';
 import { supplierTable } from '../db/schema';
-import { insertSupplierSchema, updateSupplierSchema } from '../schemas';
 import { SupplierService } from '../service/supplier';
 import { publicProcedure, router } from '../trpc';
 import { orderBySchema } from './input-helpers';
 import { getTableColumns } from 'drizzle-orm';
+import { CreateSupplierSchema, UpdateSupplierSchema } from '@countday/shared';
 
 export const supplierRouter = router({
-	insert: publicProcedure.input(insertSupplierSchema).mutation(async ({ input }) => {
+	insert: publicProcedure.input(CreateSupplierSchema).mutation(async ({ input }) => {
 		const [supplier, err] = await SupplierService.insert(input);
 		if (err) throw new Error('Failed to insert supplier.', { cause: err });
 		return supplier;
 	}),
 
 	update: publicProcedure
-		.input(z.object({ id: z.string(), partial: updateSupplierSchema }))
+		.input(z.object({ id: z.string(), partial: UpdateSupplierSchema }))
 		.mutation(async ({ input }) => {
 			const [supplier, err] = await SupplierService.update(input.id, input.partial);
 			if (err) throw new Error('Failed to update supplier.', { cause: err });

@@ -3,9 +3,9 @@ import { z } from 'zod';
 
 import { db } from '../db/db';
 import { batchTable, DatabaseItem, itemFormTable, itemTable } from '../db/schema';
-import { insertItemSchema, updateItemSchema } from '../schemas';
 import { createService } from '../util/create-service';
 import { createOrderByValue, OrderByDefinition } from '../util/order-by-build';
+import { CreateItemSchema, UpdateItemSchema } from '@countday/shared';
 
 /**
  * Responsible for item CRUD logic.
@@ -17,7 +17,7 @@ export const ItemService = createService(db, {
 	 * @param item the properties of the item
 	 * @return the created item
 	 */
-	insert: async (client, item: z.infer<typeof insertItemSchema>) => {
+	insert: async (client, item: z.infer<typeof CreateItemSchema>) => {
 		const [inserted] = await client.insert(itemTable).values(item).returning();
 		if (!inserted) throw `Unknown insertion error`;
 		return inserted;
@@ -30,12 +30,8 @@ export const ItemService = createService(db, {
 	 * @param partial the properties to update on the item
 	 * @return the updated item
 	 */
-	update: async (client, id: string, partial: z.infer<typeof updateItemSchema>) => {
-		const [updated] = await client
-			.update(itemTable)
-			.set(partial)
-			.where(eq(itemTable.id, id))
-			.returning();
+	update: async (client, id: string, partial: z.infer<typeof UpdateItemSchema>) => {
+		const [updated] = await client.update(itemTable).set(partial).where(eq(itemTable.id, id)).returning();
 
 		if (!updated) throw `Unable to update item by ID "${id}"`;
 		return updated;

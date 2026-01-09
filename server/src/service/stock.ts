@@ -1,34 +1,15 @@
-import {
-	and,
-	asc,
-	desc,
-	eq,
-	getTableColumns,
-	like,
-	notInArray,
-	or,
-	sql,
-	SQL,
-	sum,
-} from 'drizzle-orm';
+import { and, asc, desc, eq, getTableColumns, like, notInArray, or, sql, SQL, sum } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { db } from '../db/db';
-import {
-	BatchStatus,
-	DatabaseBatch,
-	DatabaseItem,
-	batchTable,
-	itemCountTable,
-	itemTable,
-} from '../db/schema';
-import { insertBatchSchema } from '../schemas';
+import { DatabaseBatch, DatabaseItem, batchTable, itemCountTable, itemTable } from '../db/schema';
 import { asNumber } from '../util/as-number';
 import { createService } from '../util/create-service';
 import { createOrderByValue, OrderByDefinition } from '../util/order-by-build';
 import { BatchService } from './batch';
 import { CountService } from './count';
 import { ItemService } from './item';
+import { Batch, BatchStatus, CreateBatchSchema } from '@countday/shared';
 
 export enum ConsumptionMethod {
 	/**
@@ -190,10 +171,7 @@ export const StockService = createService(db, {
 		return client
 			.select({ ...getTableColumns(itemTable), totalQty: totalQtyColumn })
 			.from(itemTable)
-			.leftJoin(
-				batchTable,
-				and(eq(batchTable.itemId, itemTable.id), eq(batchTable.status, qtyType)),
-			)
+			.leftJoin(batchTable, and(eq(batchTable.itemId, itemTable.id), eq(batchTable.status, qtyType)))
 			.where(where)
 			.groupBy(itemTable.id)
 			.orderBy(...evaluatedOrderBy)
@@ -284,7 +262,7 @@ export const StockService = createService(db, {
 				const newQty = batch.qty - qtyToRemove;
 				remaining -= qtyToRemove;
 
-				const batchUpdates: Partial<DatabaseBatch> = { qty: newQty };
+				const batchUpdates: Partial<Batch> = { qty: newQty };
 				if (newQty === 0) {
 					batchUpdates.status = 'archived';
 					batchUpdates.stockoutDate = new Date().toISOString();
@@ -307,7 +285,7 @@ export const StockService = createService(db, {
 	 * @param batch the properties of the batch to create
 	 * @return the created batch, if creation was successful
 	 */
-	receive: async (client, batch: z.infer<typeof insertBatchSchema>) => {
+	receive: async (client, batch: z.infer<typeof CreateBatchSchema>) => {
 		return await client.transaction(async (tx) => {
 			const [inserted, batchServiceErr] = await BatchService.$with(tx).insert(batch);
 			if (batchServiceErr !== null) throw batchServiceErr;
@@ -342,10 +320,7 @@ export const StockService = createService(db, {
 	 */
 	reconcileCount: async (client, countId: string) => {
 		await client.transaction(async (tx) => {
-			const counts = await tx
-				.select()
-				.from(itemCountTable)
-				.where(eq(itemCountTable.countId, countId));
+			const counts = await tx.select().from(itemCountTable).where(eq(itemCountTable.countId, countId));
 
 			const genericAdjustments = [];
 			const batchAdjustments = [];

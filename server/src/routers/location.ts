@@ -1,20 +1,20 @@
 import { z } from 'zod';
-import { locationTable } from '../db/schema';
-import { insertLocationSchema, updateLocationSchema } from '../schemas';
 import { LocationService } from '../service/location';
+import { CreateLocationSchema, UpdateLocationSchema } from '@countday/shared';
 import { publicProcedure, router } from '../trpc';
 import { orderBySchema } from './input-helpers';
 import { getTableColumns } from 'drizzle-orm';
+import { locationTable } from '../db/schema';
 
 export const locationRouter = router({
-	insert: publicProcedure.input(insertLocationSchema).mutation(async ({ input }) => {
+	insert: publicProcedure.input(CreateLocationSchema).mutation(async ({ input }) => {
 		const [location, err] = await LocationService.insert(input);
 		if (err) throw new Error('Failed to insert location.', { cause: err });
 		return location;
 	}),
 
 	update: publicProcedure
-		.input(z.object({ id: z.string(), partial: updateLocationSchema }))
+		.input(z.object({ id: z.string(), partial: UpdateLocationSchema }))
 		.mutation(async ({ input }) => {
 			const [location, err] = await LocationService.update(input.id, input.partial);
 			if (err) throw new Error('Failed to update location.', { cause: err });

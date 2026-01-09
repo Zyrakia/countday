@@ -2,9 +2,9 @@ import { z } from 'zod';
 import { publicProcedure, router } from '../trpc';
 import { orderBySchema, paginationLimit, paginationOffset } from './input-helpers';
 import { countTable, itemTable } from '../db/schema';
-import { insertCountDriftSchema, insertItemCountSchema } from '../schemas';
 import { getTableColumns } from 'drizzle-orm';
 import { CountService } from '../service/count';
+import { CreateItemCountSchema } from '@countday/shared';
 
 export const countRouter = router({
 	start: publicProcedure.mutation(async () => {
@@ -43,7 +43,7 @@ export const countRouter = router({
 			return counts;
 		}),
 
-	countItem: publicProcedure.input(insertItemCountSchema).mutation(async ({ input }) => {
+	countItem: publicProcedure.input(CreateItemCountSchema).mutation(async ({ input }) => {
 		const [itemCount, err] = await CountService.countItem(input);
 		if (err) throw new Error('Failed to count item.', { cause: err });
 		return itemCount;
@@ -69,14 +69,7 @@ export const countRouter = router({
 		return counts;
 	}),
 
-	processDrift: publicProcedure.input(insertCountDriftSchema).mutation(async ({ input }) => {
-		const [, err] = await CountService.processDrift(input); // processDrift returns void/null data
-		if (err) throw new Error('Failed to process drift.', { cause: err });
-		return { success: true }; // Return a success indicator
-	}),
-
 	getProgress: publicProcedure.input(z.string()).query(async ({ input: id }) => {
-		// Note: The `where` clause in service is not exposed via Zod
 		const [progress, err] = await CountService.getProgress(id);
 		if (err) throw new Error('Failed to get count progress.', { cause: err });
 		return progress;

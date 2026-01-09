@@ -3,8 +3,8 @@ import { z } from 'zod';
 
 import { db } from '../db/db';
 import { itemFormTable } from '../db/schema';
-import { insertItemFormSchema, updateItemFormSchema } from '../schemas';
 import { createService } from '../util/create-service';
+import { CreateItemFormSchema, UpdateItemFormSchema } from '@countday/shared';
 
 /**
  * Responsible for most CRUD operations relating to item forms.
@@ -19,7 +19,7 @@ export const ItemFormService = createService(db, {
 	 * @param form the properties of the item form
 	 * @return the created form
 	 */
-	insert: async (client, form: z.infer<typeof insertItemFormSchema>) => {
+	insert: async (client, form: z.infer<typeof CreateItemFormSchema>) => {
 		const [inserted] = await client.insert(itemFormTable).values(form).returning();
 		if (!inserted) throw `Unknown insertion error`;
 		return inserted;
@@ -32,7 +32,7 @@ export const ItemFormService = createService(db, {
 	 * @param partial the properties to update on the form`
 	 * @return the updated form
 	 */
-	update: async (client, id: string, partial: z.infer<typeof updateItemFormSchema>) => {
+	update: async (client, id: string, partial: z.infer<typeof UpdateItemFormSchema>) => {
 		const [updated] = await client
 			.update(itemFormTable)
 			.set(partial)
@@ -50,10 +50,7 @@ export const ItemFormService = createService(db, {
 	 * @return the deleted form
 	 */
 	remove: async (client, id: string) => {
-		const [deleted] = await client
-			.delete(itemFormTable)
-			.where(eq(itemFormTable.id, id))
-			.returning();
+		const [deleted] = await client.delete(itemFormTable).where(eq(itemFormTable.id, id)).returning();
 
 		if (!deleted) throw `Unable to delete item form of ID "${id}"`;
 		return deleted;

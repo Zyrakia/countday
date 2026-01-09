@@ -1,20 +1,20 @@
 import { z } from 'zod';
 import { categoryTable } from '../db/schema';
-import { insertCategorySchema, updateCategorySchema } from '../schemas';
 import { publicProcedure, router } from '../trpc';
 import { orderBySchema } from './input-helpers';
 import { getTableColumns } from 'drizzle-orm';
 import { CategoryService } from '../service/category';
+import { CreateCategorySchema, UpdateCategorySchema } from '@countday/shared';
 
 export const categoryRouter = router({
-	insert: publicProcedure.input(insertCategorySchema).mutation(async ({ input }) => {
+	insert: publicProcedure.input(CreateCategorySchema).mutation(async ({ input }) => {
 		const [category, err] = await CategoryService.insert(input);
 		if (err) throw new Error('Failed to insert category.', { cause: err });
 		return category;
 	}),
 
 	update: publicProcedure
-		.input(z.object({ id: z.string(), partial: updateCategorySchema }))
+		.input(z.object({ id: z.string(), partial: UpdateCategorySchema }))
 		.mutation(async ({ input }) => {
 			const [category, err] = await CategoryService.update(input.id, input.partial);
 			if (err) throw new Error('Failed to update category.', { cause: err });

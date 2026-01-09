@@ -1,3 +1,4 @@
+import { BatchStatusValues } from '@countday/shared';
 import { relations } from 'drizzle-orm';
 import type { InferSelectModel } from 'drizzle-orm';
 import { integer, primaryKey, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
@@ -50,9 +51,6 @@ export const itemFormTable = sqliteTable('item_form', {
 	qtyMultiplier: real().notNull(),
 });
 
-export const batchStatusValues = ['active', 'archived', 'expired'] as const;
-export type BatchStatus = (typeof batchStatusValues)[number];
-
 export const batchTable = sqliteTable('batch', {
 	id: randomIdColumn(),
 	itemId: text()
@@ -60,7 +58,7 @@ export const batchTable = sqliteTable('batch', {
 		.notNull(),
 	qty: real().notNull(),
 	unitBuyPrice: real(),
-	status: text('status', { enum: batchStatusValues }).default('active').notNull(),
+	status: text('status', { enum: BatchStatusValues }).default('active').notNull(),
 	locationId: text().references(() => locationTable.id, { onDelete: 'set null' }),
 	supplierId: text().references(() => supplierTable.id, { onDelete: 'set null' }),
 	createdDate: text().notNull(),

@@ -1,20 +1,20 @@
 import { z } from 'zod';
-import { batchStatusValues, batchTable } from '../db/schema';
-import { insertBatchSchema, updateBatchSchema } from '../schemas';
+import { batchTable } from '../db/schema';
 import { BatchService } from '../service/batch';
 import { publicProcedure, router } from '../trpc';
 import { orderBySchema, paginationLimit, paginationOffset } from './input-helpers';
 import { eq, getTableColumns } from 'drizzle-orm';
+import { BatchStatusValues, CreateBatchSchema, UpdateBatchSchema } from '@countday/shared';
 
 export const batchRouter = router({
-	insert: publicProcedure.input(insertBatchSchema).mutation(async ({ input }) => {
+	insert: publicProcedure.input(CreateBatchSchema).mutation(async ({ input }) => {
 		const [batch, err] = await BatchService.insert(input);
 		if (err) throw new Error('Failed to insert batch.', { cause: err });
 		return batch;
 	}),
 
 	update: publicProcedure
-		.input(z.object({ id: z.string(), partial: updateBatchSchema }))
+		.input(z.object({ id: z.string(), partial: UpdateBatchSchema }))
 		.mutation(async ({ input }) => {
 			const [batch, err] = await BatchService.update(input.id, input.partial);
 			if (err) throw new Error('Failed to update batch.', { cause: err });
@@ -34,7 +34,7 @@ export const batchRouter = router({
 				limit: paginationLimit,
 				offset: paginationOffset,
 				orderBy: orderBySchema(getTableColumns(batchTable)).optional(),
-				targetStatus: z.enum(batchStatusValues).default('active'),
+				targetStatus: z.enum(BatchStatusValues).default('active'),
 			}),
 		)
 		.query(async ({ input }) => {

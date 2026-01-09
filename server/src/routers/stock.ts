@@ -1,17 +1,17 @@
 import { z } from 'zod';
-import { batchStatusValues, itemTable } from '../db/schema';
-import { insertBatchSchema } from '../schemas';
 import { StockService, ConsumptionMethod } from '../service/stock';
 import { publicProcedure, router } from '../trpc';
 import { orderBySchema, paginationLimit, paginationOffset } from './input-helpers';
 import { getTableColumns } from 'drizzle-orm';
+import { BatchStatusSchema, CreateBatchSchema } from '@countday/shared';
+import { itemTable } from '../db/schema';
 
 export const stockRouter = router({
 	getItemQty: publicProcedure
 		.input(
 			z.object({
 				id: z.string(),
-				qtyType: z.enum(batchStatusValues).optional(),
+				qtyType: BatchStatusSchema.optional(),
 			}),
 		)
 		.query(async ({ input }) => {
@@ -24,7 +24,7 @@ export const stockRouter = router({
 		.input(
 			z.object({
 				idOrFormId: z.string(),
-				qtyType: z.enum(batchStatusValues).optional(),
+				qtyType: BatchStatusSchema.optional(),
 			}),
 		)
 		.query(async ({ input }) => {
@@ -49,7 +49,7 @@ export const stockRouter = router({
 	getItems: publicProcedure
 		.input(
 			z.object({
-				qtyType: z.enum(batchStatusValues),
+				qtyType: BatchStatusSchema,
 				limit: paginationLimit,
 				offset: paginationOffset,
 				orderBy: orderBySchema({ ...getTableColumns(itemTable), totalQty: z.number() }).optional(),
@@ -70,7 +70,7 @@ export const stockRouter = router({
 		.input(
 			z.object({
 				query: z.string().min(1),
-				qtyType: z.enum(batchStatusValues),
+				qtyType: BatchStatusSchema,
 				limit: paginationLimit,
 				offset: paginationOffset,
 				orderBy: orderBySchema({ ...getTableColumns(itemTable), totalQty: z.number() }).optional(),
@@ -106,7 +106,7 @@ export const stockRouter = router({
 			return remainingQty;
 		}),
 
-	receive: publicProcedure.input(insertBatchSchema).mutation(async ({ input }) => {
+	receive: publicProcedure.input(CreateBatchSchema).mutation(async ({ input }) => {
 		const [batch, err] = await StockService.receive(input);
 		if (err) throw new Error('Failed to receive stock batch.', { cause: err });
 		return batch;

@@ -1,17 +1,17 @@
 import { z } from 'zod';
-import { insertItemFormSchema, updateItemFormSchema } from '../schemas';
 import { ItemFormService } from '../service/item-form';
 import { publicProcedure, router } from '../trpc';
+import { CreateItemFormSchema, UpdateItemFormSchema } from '@countday/shared';
 
 export const itemFormRouter = router({
-	insert: publicProcedure.input(insertItemFormSchema).mutation(async ({ input }) => {
+	insert: publicProcedure.input(CreateItemFormSchema).mutation(async ({ input }) => {
 		const [form, err] = await ItemFormService.insert(input);
 		if (err) throw new Error('Failed to insert item form.', { cause: err });
 		return form;
 	}),
 
 	update: publicProcedure
-		.input(z.object({ id: z.string(), partial: updateItemFormSchema }))
+		.input(z.object({ id: z.string(), partial: UpdateItemFormSchema }))
 		.mutation(async ({ input }) => {
 			const [form, err] = await ItemFormService.update(input.id, input.partial);
 			if (err) throw new Error('Failed to update item form.', { cause: err });
