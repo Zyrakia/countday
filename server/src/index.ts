@@ -1,6 +1,6 @@
 import Fastify from 'fastify';
 
-import { fastifyCors as fastifyCordsPlugin } from '@fastify/cors';
+import { fastifyCors as fastifyCorsPlugin } from '@fastify/cors';
 import { fastifyTRPCPlugin } from '@trpc/server/adapters/fastify';
 
 import { serverEnv } from '@countday/shared/env/server';
@@ -12,7 +12,7 @@ const server = Fastify({
 	routerOptions: { maxParamLength: 5000 },
 });
 
-server.register(fastifyCordsPlugin, {});
+server.register(fastifyCorsPlugin, {});
 
 server.register(fastifyTRPCPlugin, {
 	prefix: '/trpc',
