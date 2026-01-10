@@ -16,6 +16,8 @@ Project-specific guidance for any future work in this repo.
 -   Environment schemas live alongside the loaders in `packages/shared/src/env/public.ts` (client) and `packages/shared/src/env/server.ts` (server).
 -   The server loader reads `.env*` files from the repo root based on `NODE_ENV`/`BUN_ENV` and validates with zod.
 -   The client loader only reads Vite `import.meta.env` values with the `VITE_` prefix; never import server env on the client.
+-   Add necessary `shadcn-svelte` components via the `cli` in the `client` directory.
+-   All `shadcn-svelte` components are imported via `*` syntax. Example: "`import * as Dialog from '$lib/components/ui/dialog'`".
 
 ## Development commands
 
